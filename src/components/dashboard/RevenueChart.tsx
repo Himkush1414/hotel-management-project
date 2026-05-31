@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -7,83 +8,95 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrencyCompact } from "@/lib/utils/formatCurrency";
+import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils/formatCurrency";
 
-interface RevenueDataPoint {
+interface DataPoint {
   date: string;
   revenue: number;
+  expenses: number;
 }
 
-interface RevenueChartProps {
-  data: RevenueDataPoint[];
+interface Props {
+  data: DataPoint[];
 }
 
-function formatAxisDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-IN", { weekday: "short" });
+type GroupBy = "daily" | "weekly" | "monthly";
+
+function groupData(data: DataPoint[], groupBy: GroupBy): DataPoint[] {
+  if (groupBy === "daily") return data;
+
+  const groups: Record<string, DataPoint> = {};
+  data.forEach((point) => {
+    let key: string;
+    if (groupBy === "weekly") {
+      const idx = data.indexOf(point);
+      key = `Week ${Math.floor(idx / 7) + 1}`;
+    } else {
+      key = point.date.split(" ")[1] ?? point.date;
+    }
+    if (!groups[key]) {
+      groups[key] = { date: key, revenue: 0, expenses: 0 };
+    }
+    groups[key].revenue += point.revenue;
+    groups[key].expenses += point.expenses;
+  });
+  return Object.values(groups);
 }
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export function RevenueChart({ data }: Props) {
+  const [groupBy, setGroupBy] = useState<GroupBy>("daily");
+  const grouped = groupData(data, groupBy);
+
+  const maxVal = Math.max(
+    ...grouped.map((d) => Math.max(d.revenue, d.expenses))
+  );
+
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-base font-semibold">
-          Revenue — Last 7 Days
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart
-            data={data}
-            margin={{ top: 4, right: 12, left: -10, bottom: 0 }}
+    <div className="space-y-3">
+      <div className="flex gap-1">
+        {(["daily", "weekly", "monthly"] as GroupBy[]).map((g) => (
+          <Button
+            key={g}
+            size="sm"
+            variant={groupBy === g ? "default" : "ghost"}
+            onClick={() => setGroupBy(g)}
+            className="h-7 text-xs capitalize"
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatAxisDate}
-              tick={{ fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              tickFormatter={(v: number) => formatCurrencyCompact(v)}
-              tick={{ fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              formatter={(value: number) => [
-                new Intl.NumberFormat("en-IN", {
-                  style: "currency",
-                  currency: "INR",
-                }).format(value),
-                "Revenue",
-              ]}
-              labelFormatter={(label: string) =>
-                new Date(label).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              }
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid hsl(var(--border))",
-                fontSize: "12px",
-              }}
-            />
-            <Bar
-              dataKey="revenue"
-              fill="#6366f1"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={48}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+            {g}
+          </Button>
+        ))}
+      </div>
+      <ResponsiveContainer width="100%" height={260}>
+        <BarChart data={grouped} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+            width={50}
+            domain={[0, maxVal * 1.1]}
+          />
+          <Tooltip
+            formatter={(value: number) => formatCurrency(value)}
+            contentStyle={{ fontSize: 12, borderRadius: 8 }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+          <Bar dataKey="expenses" name="Expenses" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
