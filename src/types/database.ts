@@ -1,634 +1,643 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
 export type StaffRole =
-  | 'admin'
-  | 'manager'
-  | 'receptionist'
-  | 'housekeeping'
-  | 'security'
-  | 'kitchen'
+  | "admin"
+  | "manager"
+  | "receptionist"
+  | "housekeeping"
+  | "maintenance"
+  | "accountant";
 
 export type RoomStatus =
-  | 'available'
-  | 'occupied'
-  | 'cleaning'
-  | 'maintenance'
-  | 'blocked'
+  | "available"
+  | "occupied"
+  | "cleaning"
+  | "maintenance"
+  | "blocked";
 
 export type BookingStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'checked_in'
-  | 'checked_out'
-  | 'cancelled'
-  | 'no_show'
+  | "confirmed"
+  | "checked_in"
+  | "checked_out"
+  | "cancelled"
+  | "no_show";
 
-export type PaymentStatus =
-  | 'pending'
-  | 'partial'
-  | 'paid'
-  | 'refunded'
-  | 'failed'
+export type PaymentStatus = "pending" | "partial" | "paid" | "refunded";
 
 export type PaymentMode =
-  | 'cash'
-  | 'card'
-  | 'upi'
-  | 'bank_transfer'
-  | 'razorpay'
-  | 'complimentary'
+  | "cash"
+  | "upi"
+  | "bank_transfer"
+  | "card"
+  | "cheque"
+  | "razorpay";
 
 export type IdProofType =
-  | 'aadhaar'
-  | 'passport'
-  | 'driving_license'
-  | 'voter_id'
-  | 'pan_card'
+  | "aadhaar"
+  | "passport"
+  | "driving_license"
+  | "voter_id"
+  | "pan_card";
 
 export interface Database {
   public: {
     Tables: {
       hotels: {
         Row: {
-          id:             string
-          name:           string
-          slug:           string
-          address:        string | null
-          city:           string | null
-          state:          string | null
-          country:        string
-          pincode:        string | null
-          phone:          string | null
-          email:          string | null
-          gstin:          string | null
-          logo_url:       string | null
-          currency:       string
-          timezone:       string
-          check_in_time:  string
-          check_out_time: string
-          is_active:      boolean
-          created_at:     string
-          updated_at:     string
-        }
+          id: string;
+          name: string;
+          address: string;
+          phone: string;
+          email: string;
+          website: string | null;
+          tax_percentage: number;
+          currency: string;
+          logo_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:            string
-          name:           string
-          slug:           string
-          address?:       string | null
-          city?:          string | null
-          state?:         string | null
-          country?:       string
-          pincode?:       string | null
-          phone?:         string | null
-          email?:         string | null
-          gstin?:         string | null
-          logo_url?:      string | null
-          currency?:      string
-          timezone?:      string
-          check_in_time?: string
-          check_out_time?:string
-          is_active?:     boolean
-          created_at?:    string
-          updated_at?:    string
-        }
-        Update: Partial<Database['public']['Tables']['hotels']['Insert']>
-      }
+          id?: string;
+          name: string;
+          address: string;
+          phone: string;
+          email: string;
+          website?: string | null;
+          tax_percentage?: number;
+          currency?: string;
+          logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          address?: string;
+          phone?: string;
+          email?: string;
+          website?: string | null;
+          tax_percentage?: number;
+          currency?: string;
+          logo_url?: string | null;
+          updated_at?: string;
+        };
+      };
       profiles: {
         Row: {
-          id:         string
-          hotel_id:   string
-          role:       StaffRole
-          full_name:  string
-          phone:      string | null
-          avatar_url: string | null
-          is_active:  boolean
-          created_at: string
-          updated_at: string
-        }
+          id: string;
+          hotel_id: string;
+          full_name: string;
+          role: StaffRole;
+          phone: string | null;
+          avatar_url: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id:          string
-          hotel_id:    string
-          role?:       StaffRole
-          full_name:   string
-          phone?:      string | null
-          avatar_url?: string | null
-          is_active?:  boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['profiles']['Insert']>
-      }
+          id: string;
+          hotel_id: string;
+          full_name: string;
+          role: StaffRole;
+          phone?: string | null;
+          avatar_url?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          hotel_id?: string;
+          full_name?: string;
+          role?: StaffRole;
+          phone?: string | null;
+          avatar_url?: string | null;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+      };
       staff: {
         Row: {
-          id:                string
-          hotel_id:          string
-          profile_id:        string | null
-          employee_code:     string
-          full_name:         string
-          role:              StaffRole
-          department:        string | null
-          phone:             string
-          email:             string | null
-          address:           string | null
-          date_of_joining:   string
-          date_of_birth:     string | null
-          salary:            number | null
-          bank_account:      string | null
-          bank_ifsc:         string | null
-          emergency_contact: string | null
-          is_active:         boolean
-          notes:             string | null
-          created_at:        string
-          updated_at:        string
-        }
+          id: string;
+          hotel_id: string;
+          profile_id: string | null;
+          full_name: string;
+          phone: string;
+          email: string | null;
+          role: StaffRole;
+          date_of_joining: string;
+          basic_salary: number;
+          address: string;
+          emergency_contact_name: string;
+          emergency_contact_phone: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:               string
-          hotel_id:          string
-          profile_id?:       string | null
-          employee_code:     string
-          full_name:         string
-          role:              StaffRole
-          department?:       string | null
-          phone:             string
-          email?:            string | null
-          address?:          string | null
-          date_of_joining:   string
-          date_of_birth?:    string | null
-          salary?:           number | null
-          bank_account?:     string | null
-          bank_ifsc?:        string | null
-          emergency_contact?:string | null
-          is_active?:        boolean
-          notes?:            string | null
-          created_at?:       string
-          updated_at?:       string
-        }
-        Update: Partial<Database['public']['Tables']['staff']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          profile_id?: string | null;
+          full_name: string;
+          phone: string;
+          email?: string | null;
+          role: StaffRole;
+          date_of_joining: string;
+          basic_salary: number;
+          address: string;
+          emergency_contact_name: string;
+          emergency_contact_phone: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          profile_id?: string | null;
+          full_name?: string;
+          phone?: string;
+          email?: string | null;
+          role?: StaffRole;
+          date_of_joining?: string;
+          basic_salary?: number;
+          address?: string;
+          emergency_contact_name?: string;
+          emergency_contact_phone?: string;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+      };
       staff_documents: {
         Row: {
-          id:            string
-          hotel_id:      string
-          staff_id:      string
-          document_type: string
-          document_name: string
-          file_url:      string
-          uploaded_at:   string
-        }
+          id: string;
+          staff_id: string;
+          hotel_id: string;
+          document_type: string;
+          document_url: string;
+          uploaded_at: string;
+        };
         Insert: {
-          id?:           string
-          hotel_id:      string
-          staff_id:      string
-          document_type: string
-          document_name: string
-          file_url:      string
-          uploaded_at?:  string
-        }
-        Update: Partial<Database['public']['Tables']['staff_documents']['Insert']>
-      }
+          id?: string;
+          staff_id: string;
+          hotel_id: string;
+          document_type: string;
+          document_url: string;
+          uploaded_at?: string;
+        };
+        Update: {
+          document_type?: string;
+          document_url?: string;
+        };
+      };
       attendance: {
         Row: {
-          id:         string
-          hotel_id:   string
-          staff_id:   string
-          date:       string
-          check_in:   string | null
-          check_out:  string | null
-          status:     'present' | 'absent' | 'half_day' | 'leave' | 'holiday'
-          notes:      string | null
-          marked_by:  string | null
-          created_at: string
-          updated_at: string
-        }
+          id: string;
+          staff_id: string;
+          hotel_id: string;
+          date: string;
+          check_in: string | null;
+          check_out: string | null;
+          status: "present" | "absent" | "half_day" | "leave";
+          notes: string | null;
+          created_at: string;
+        };
         Insert: {
-          id?:        string
-          hotel_id:   string
-          staff_id:   string
-          date:       string
-          check_in?:  string | null
-          check_out?: string | null
-          status?:    'present' | 'absent' | 'half_day' | 'leave' | 'holiday'
-          notes?:     string | null
-          marked_by?: string | null
-          created_at?:string
-          updated_at?:string
-        }
-        Update: Partial<Database['public']['Tables']['attendance']['Insert']>
-      }
+          id?: string;
+          staff_id: string;
+          hotel_id: string;
+          date: string;
+          check_in?: string | null;
+          check_out?: string | null;
+          status: "present" | "absent" | "half_day" | "leave";
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          check_in?: string | null;
+          check_out?: string | null;
+          status?: "present" | "absent" | "half_day" | "leave";
+          notes?: string | null;
+        };
+      };
       room_types: {
         Row: {
-          id:            string
-          hotel_id:      string
-          name:          string
-          description:   string | null
-          base_price:    number
-          max_occupancy: number
-          amenities:     string[]
-          is_active:     boolean
-          created_at:    string
-          updated_at:    string
-        }
+          id: string;
+          hotel_id: string;
+          name: string;
+          description: string | null;
+          base_price: number;
+          max_adults: number;
+          max_children: number;
+          amenities: string[];
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:           string
-          hotel_id:      string
-          name:          string
-          description?:  string | null
-          base_price:    number
-          max_occupancy?:number
-          amenities?:    string[]
-          is_active?:    boolean
-          created_at?:   string
-          updated_at?:   string
-        }
-        Update: Partial<Database['public']['Tables']['room_types']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          name: string;
+          description?: string | null;
+          base_price: number;
+          max_adults?: number;
+          max_children?: number;
+          amenities?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          base_price?: number;
+          max_adults?: number;
+          max_children?: number;
+          amenities?: string[];
+          updated_at?: string;
+        };
+      };
       rooms: {
         Row: {
-          id:           string
-          hotel_id:     string
-          room_type_id: string
-          room_number:  string
-          floor:        number | null
-          status:       RoomStatus
-          is_active:    boolean
-          notes:        string | null
-          created_at:   string
-          updated_at:   string
-        }
+          id: string;
+          hotel_id: string;
+          room_number: string;
+          floor: number;
+          room_type_id: string;
+          status: RoomStatus;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:          string
-          hotel_id:     string
-          room_type_id: string
-          room_number:  string
-          floor?:       number | null
-          status?:      RoomStatus
-          is_active?:   boolean
-          notes?:       string | null
-          created_at?:  string
-          updated_at?:  string
-        }
-        Update: Partial<Database['public']['Tables']['rooms']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          room_number: string;
+          floor: number;
+          room_type_id: string;
+          status?: RoomStatus;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          room_number?: string;
+          floor?: number;
+          room_type_id?: string;
+          status?: RoomStatus;
+          notes?: string | null;
+          updated_at?: string;
+        };
+      };
       guests: {
         Row: {
-          id:              string
-          hotel_id:        string
-          full_name:       string
-          phone:           string
-          email:           string | null
-          nationality:     string | null
-          id_proof_type:   IdProofType | null
-          id_proof_number: string | null
-          id_proof_url:    string | null
-          address:         string | null
-          city:            string | null
-          state:           string | null
-          date_of_birth:   string | null
-          notes:           string | null
-          total_stays:     number
-          created_at:      string
-          updated_at:      string
-        }
+          id: string;
+          hotel_id: string;
+          full_name: string;
+          phone: string;
+          email: string | null;
+          id_proof_type: IdProofType;
+          id_proof_number: string;
+          address: string;
+          city: string;
+          state: string;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:              string
-          hotel_id:         string
-          full_name:        string
-          phone:            string
-          email?:           string | null
-          nationality?:     string | null
-          id_proof_type?:   IdProofType | null
-          id_proof_number?: string | null
-          id_proof_url?:    string | null
-          address?:         string | null
-          city?:            string | null
-          state?:           string | null
-          date_of_birth?:   string | null
-          notes?:           string | null
-          total_stays?:     number
-          created_at?:      string
-          updated_at?:      string
-        }
-        Update: Partial<Database['public']['Tables']['guests']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          full_name: string;
+          phone: string;
+          email?: string | null;
+          id_proof_type: IdProofType;
+          id_proof_number: string;
+          address: string;
+          city: string;
+          state: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          full_name?: string;
+          phone?: string;
+          email?: string | null;
+          id_proof_type?: IdProofType;
+          id_proof_number?: string;
+          address?: string;
+          city?: string;
+          state?: string;
+          updated_at?: string;
+        };
+      };
       bookings: {
         Row: {
-          id:               string
-          hotel_id:         string
-          booking_number:   string
-          guest_id:         string
-          room_id:          string
-          check_in_date:    string
-          check_out_date:   string
-          actual_check_in:  string | null
-          actual_check_out: string | null
-          num_adults:       number
-          num_children:     number
-          status:           BookingStatus
-          source:           string | null
-          room_rate:        number
-          total_nights:     number
-          special_requests: string | null
-          notes:            string | null
-          created_by:       string | null
-          created_at:       string
-          updated_at:       string
-        }
+          id: string;
+          hotel_id: string;
+          guest_id: string;
+          room_id: string;
+          booking_reference: string;
+          check_in_date: string;
+          check_out_date: string;
+          actual_check_in: string | null;
+          actual_check_out: string | null;
+          room_rate: number;
+          adults: number;
+          children: number;
+          status: BookingStatus;
+          special_requests: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:               string
-          hotel_id:          string
-          booking_number:    string
-          guest_id:          string
-          room_id:           string
-          check_in_date:     string
-          check_out_date:    string
-          actual_check_in?:  string | null
-          actual_check_out?: string | null
-          num_adults?:       number
-          num_children?:     number
-          status?:           BookingStatus
-          source?:           string | null
-          room_rate:         number
-          total_nights:      number
-          special_requests?: string | null
-          notes?:            string | null
-          created_by?:       string | null
-          created_at?:       string
-          updated_at?:       string
-        }
-        Update: Partial<Database['public']['Tables']['bookings']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          guest_id: string;
+          room_id: string;
+          booking_reference: string;
+          check_in_date: string;
+          check_out_date: string;
+          actual_check_in?: string | null;
+          actual_check_out?: string | null;
+          room_rate: number;
+          adults?: number;
+          children?: number;
+          status?: BookingStatus;
+          special_requests?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          check_in_date?: string;
+          check_out_date?: string;
+          actual_check_in?: string | null;
+          actual_check_out?: string | null;
+          room_rate?: number;
+          adults?: number;
+          children?: number;
+          status?: BookingStatus;
+          special_requests?: string | null;
+          updated_at?: string;
+        };
+      };
       booking_extras: {
         Row: {
-          id:          string
-          hotel_id:    string
-          booking_id:  string
-          description: string
-          quantity:    number
-          unit_price:  number
-          total_price: number
-          added_by:    string | null
-          created_at:  string
-        }
+          id: string;
+          booking_id: string;
+          hotel_id: string;
+          description: string;
+          amount: number;
+          category: string;
+          added_by: string;
+          created_at: string;
+        };
         Insert: {
-          id?:         string
-          hotel_id:    string
-          booking_id:  string
-          description: string
-          quantity?:   number
-          unit_price:  number
-          total_price: number
-          added_by?:   string | null
-          created_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['booking_extras']['Insert']>
-      }
+          id?: string;
+          booking_id: string;
+          hotel_id: string;
+          description: string;
+          amount: number;
+          category: string;
+          added_by: string;
+          created_at?: string;
+        };
+        Update: {
+          description?: string;
+          amount?: number;
+          category?: string;
+        };
+      };
       invoices: {
         Row: {
-          id:              string
-          hotel_id:        string
-          booking_id:      string
-          invoice_number:  string
-          guest_id:        string
-          subtotal:        number
-          tax_amount:      number
-          discount_amount: number
-          total_amount:    number
-          paid_amount:     number
-          balance_amount:  number
-          payment_status:  PaymentStatus
-          notes:           string | null
-          issued_at:       string
-          due_date:        string | null
-          created_by:      string | null
-          created_at:      string
-          updated_at:      string
-        }
+          id: string;
+          hotel_id: string;
+          booking_id: string;
+          invoice_number: string;
+          subtotal: number;
+          tax_amount: number;
+          discount_type: "percentage" | "flat" | null;
+          discount_value: number;
+          discount_reason: string | null;
+          total_amount: number;
+          payment_status: PaymentStatus;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:              string
-          hotel_id:         string
-          booking_id:       string
-          invoice_number:   string
-          guest_id:         string
-          subtotal?:        number
-          tax_amount?:      number
-          discount_amount?: number
-          total_amount:     number
-          paid_amount?:     number
-          payment_status?:  PaymentStatus
-          notes?:           string | null
-          issued_at?:       string
-          due_date?:        string | null
-          created_by?:      string | null
-          created_at?:      string
-          updated_at?:      string
-        }
-        Update: Partial<Database['public']['Tables']['invoices']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          booking_id: string;
+          invoice_number: string;
+          subtotal: number;
+          tax_amount?: number;
+          discount_type?: "percentage" | "flat" | null;
+          discount_value?: number;
+          discount_reason?: string | null;
+          total_amount: number;
+          payment_status?: PaymentStatus;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          subtotal?: number;
+          tax_amount?: number;
+          discount_type?: "percentage" | "flat" | null;
+          discount_value?: number;
+          discount_reason?: string | null;
+          total_amount?: number;
+          payment_status?: PaymentStatus;
+          notes?: string | null;
+          updated_at?: string;
+        };
+      };
       payments: {
         Row: {
-          id:                   string
-          hotel_id:             string
-          invoice_id:           string
-          amount:               number
-          payment_mode:         PaymentMode
-          transaction_id:       string | null
-          razorpay_order_id:    string | null
-          razorpay_payment_id:  string | null
-          razorpay_signature:   string | null
-          notes:                string | null
-          received_by:          string | null
-          created_at:           string
-        }
+          id: string;
+          hotel_id: string;
+          invoice_id: string;
+          amount: number;
+          payment_mode: PaymentMode;
+          transaction_id: string | null;
+          razorpay_order_id: string | null;
+          razorpay_payment_id: string | null;
+          notes: string | null;
+          paid_at: string;
+          created_at: string;
+        };
         Insert: {
-          id?:                   string
-          hotel_id:              string
-          invoice_id:            string
-          amount:                number
-          payment_mode:          PaymentMode
-          transaction_id?:       string | null
-          razorpay_order_id?:    string | null
-          razorpay_payment_id?:  string | null
-          razorpay_signature?:   string | null
-          notes?:                string | null
-          received_by?:          string | null
-          created_at?:           string
-        }
-        Update: Partial<Database['public']['Tables']['payments']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          invoice_id: string;
+          amount: number;
+          payment_mode: PaymentMode;
+          transaction_id?: string | null;
+          razorpay_order_id?: string | null;
+          razorpay_payment_id?: string | null;
+          notes?: string | null;
+          paid_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          amount?: number;
+          payment_mode?: PaymentMode;
+          transaction_id?: string | null;
+          razorpay_order_id?: string | null;
+          razorpay_payment_id?: string | null;
+          notes?: string | null;
+        };
+      };
       expense_categories: {
         Row: {
-          id:          string
-          hotel_id:    string
-          name:        string
-          description: string | null
-          is_active:   boolean
-          created_at:  string
-        }
+          id: string;
+          hotel_id: string;
+          name: string;
+          description: string | null;
+          created_at: string;
+        };
         Insert: {
-          id?:          string
-          hotel_id:     string
-          name:         string
-          description?: string | null
-          is_active?:   boolean
-          created_at?:  string
-        }
-        Update: Partial<Database['public']['Tables']['expense_categories']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          name: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+        };
+      };
       expenses: {
         Row: {
-          id:           string
-          hotel_id:     string
-          category_id:  string
-          description:  string
-          amount:       number
-          expense_date: string
-          receipt_url:  string | null
-          vendor_name:  string | null
-          payment_mode: PaymentMode
-          approved_by:  string | null
-          recorded_by:  string | null
-          notes:        string | null
-          created_at:   string
-          updated_at:   string
-        }
+          id: string;
+          hotel_id: string;
+          category_id: string;
+          amount: number;
+          description: string;
+          expense_date: string;
+          payment_mode: PaymentMode;
+          receipt_url: string | null;
+          added_by: string;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:           string
-          hotel_id:      string
-          category_id:   string
-          description:   string
-          amount:        number
-          expense_date:  string
-          receipt_url?:  string | null
-          vendor_name?:  string | null
-          payment_mode?: PaymentMode
-          approved_by?:  string | null
-          recorded_by?:  string | null
-          notes?:        string | null
-          created_at?:   string
-          updated_at?:   string
-        }
-        Update: Partial<Database['public']['Tables']['expenses']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          category_id: string;
+          amount: number;
+          description: string;
+          expense_date: string;
+          payment_mode: PaymentMode;
+          receipt_url?: string | null;
+          added_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          category_id?: string;
+          amount?: number;
+          description?: string;
+          expense_date?: string;
+          payment_mode?: PaymentMode;
+          receipt_url?: string | null;
+          updated_at?: string;
+        };
+      };
       notifications: {
         Row: {
-          id:         string
-          hotel_id:   string
-          profile_id: string | null
-          title:      string
-          message:    string
-          type:       'info' | 'warning' | 'error' | 'success'
-          is_read:    boolean
-          link:       string | null
-          created_at: string
-        }
+          id: string;
+          hotel_id: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type: "info" | "success" | "warning" | "error";
+          is_read: boolean;
+          link: string | null;
+          created_at: string;
+        };
         Insert: {
-          id?:        string
-          hotel_id:   string
-          profile_id?:string | null
-          title:      string
-          message:    string
-          type?:      'info' | 'warning' | 'error' | 'success'
-          is_read?:   boolean
-          link?:      string | null
-          created_at?:string
-        }
-        Update: Partial<Database['public']['Tables']['notifications']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type?: "info" | "success" | "warning" | "error";
+          is_read?: boolean;
+          link?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          is_read?: boolean;
+        };
+      };
       feature_flags: {
         Row: {
-          id:         string
-          hotel_id:   string
-          flag_key:   string
-          is_enabled: boolean
-          updated_by: string | null
-          updated_at: string
-        }
+          id: string;
+          hotel_id: string;
+          feature_key: string;
+          is_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:         string
-          hotel_id:    string
-          flag_key:    string
-          is_enabled?: boolean
-          updated_by?: string | null
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['feature_flags']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          feature_key: string;
+          is_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          is_enabled?: boolean;
+          updated_at?: string;
+        };
+      };
       settings: {
         Row: {
-          id:                    string
-          hotel_id:              string
-          gst_rate:              number
-          invoice_prefix:        string
-          booking_prefix:        string
-          whatsapp_enabled:      boolean
-          whatsapp_api_key:      string | null
-          razorpay_enabled:      boolean
-          auto_checkout_enabled: boolean
-          auto_checkout_time:    string | null
-          updated_at:            string
-        }
+          id: string;
+          hotel_id: string;
+          key: string;
+          value: string;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?:                    string
-          hotel_id:               string
-          gst_rate?:              number
-          invoice_prefix?:        string
-          booking_prefix?:        string
-          whatsapp_enabled?:      boolean
-          whatsapp_api_key?:      string | null
-          razorpay_enabled?:      boolean
-          auto_checkout_enabled?: boolean
-          auto_checkout_time?:    string | null
-          updated_at?:            string
-        }
-        Update: Partial<Database['public']['Tables']['settings']['Insert']>
-      }
+          id?: string;
+          hotel_id: string;
+          key: string;
+          value: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          value?: string;
+          updated_at?: string;
+        };
+      };
       audit_logs: {
         Row: {
-          id:           string
-          hotel_id:     string | null
-          table_name:   string
-          record_id:    string | null
-          action:       'INSERT' | 'UPDATE' | 'DELETE'
-          old_data:     Json | null
-          new_data:     Json | null
-          performed_by: string | null
-          created_at:   string
-        }
+          id: string;
+          hotel_id: string;
+          user_id: string;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          old_data: Record<string, unknown> | null;
+          new_data: Record<string, unknown> | null;
+          ip_address: string | null;
+          created_at: string;
+        };
         Insert: {
-          id?:           string
-          hotel_id?:     string | null
-          table_name:    string
-          record_id?:    string | null
-          action:        'INSERT' | 'UPDATE' | 'DELETE'
-          old_data?:     Json | null
-          new_data?:     Json | null
-          performed_by?: string | null
-          created_at?:   string
-        }
-        Update: Partial<Database['public']['Tables']['audit_logs']['Insert']>
-      }
-    }
-    Views:   Record<string, never>
-    Functions: {
-      get_my_hotel_id:    { Args: Record<string, never>; Returns: string }
-      get_my_role:        { Args: Record<string, never>; Returns: StaffRole }
-      is_admin:           { Args: Record<string, never>; Returns: boolean }
-      is_admin_or_manager:{ Args: Record<string, never>; Returns: boolean }
-      seed_hotel_defaults:{ Args: { p_hotel_id: string }; Returns: void }
-    }
-    Enums: {
-      staff_role:     StaffRole
-      room_status:    RoomStatus
-      booking_status: BookingStatus
-      payment_status: PaymentStatus
-      payment_mode:   PaymentMode
-      id_proof_type:  IdProofType
-    }
-  }
+          id?: string;
+          hotel_id: string;
+          user_id: string;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          old_data?: Record<string, unknown> | null;
+          new_data?: Record<string, unknown> | null;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: never;
+      };
+    };
+  };
 }
