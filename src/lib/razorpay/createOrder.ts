@@ -1,36 +1,40 @@
-import Razorpay from 'razorpay'
+import "server-only";
+import Razorpay from "razorpay";
 
 const razorpay = new Razorpay({
-  key_id:     process.env.RAZORPAY_KEY_ID!,
+  key_id: process.env.RAZORPAY_KEY_ID!,
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
+});
 
-export interface CreateOrderParams {
-  amount:     number // in paise (multiply INR by 100)
-  currency?:  string
-  receipt:    string
-  notes?:     Record<string, string>
+interface CreateOrderParams {
+  amount: number;
+  invoiceId: string;
+  currency?: string;
 }
 
-export interface RazorpayOrder {
-  id:         string
-  entity:     string
-  amount:     number
-  currency:   string
-  receipt:    string
-  status:     string
-  created_at: number
+interface CreateOrderResult {
+  orderId: string;
+  amount: number;
+  currency: string;
 }
 
-export async function createOrder(
-  params: CreateOrderParams
-): Promise<RazorpayOrder> {
+export async function createRazorpayOrder({
+  amount,
+  invoiceId,
+  currency = "INR",
+}: CreateOrderParams): Promise<CreateOrderResult> {
   const order = await razorpay.orders.create({
-    amount:   params.amount,
-    currency: params.currency ?? 'INR',
-    receipt:  params.receipt,
-    notes:    params.notes ?? {},
-  })
+    amount,
+    currency,
+    receipt: invoiceId,
+    notes: {
+      invoice_id: invoiceId,
+    },
+  });
 
-  return order as RazorpayOrder
+  return {
+    orderId: order.id,
+    amount: order.amount as number,
+    currency: order.currency,
+  };
 }
