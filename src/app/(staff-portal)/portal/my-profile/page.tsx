@@ -25,7 +25,7 @@ interface Staff {
 
 export default function MyProfilePage() {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
   const [staff, setStaff] = useState<Staff | null>(null);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -34,7 +34,7 @@ export default function MyProfilePage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase.from("staff").select("*").eq("user_id", user.id).single();
+      const { data } = await supabase.from("staff").select("*").eq("profile_id", user.id).single();
       if (data) {
         setStaff(data as Staff);
         setPhone(data.phone ?? "");
@@ -48,10 +48,10 @@ export default function MyProfilePage() {
     setSaving(true);
     const { error } = await supabase.from("staff").update({ phone }).eq("id", staff.id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
       setStaff((prev) => prev ? { ...prev, phone } : prev);
-      toast({ title: "Phone number updated" });
+      toast.success("Phone number updated");
     }
     setSaving(false);
   };

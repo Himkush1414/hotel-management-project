@@ -34,7 +34,7 @@ export function AttendanceFilters({
         onChange={(e) => onDateChange(e.target.value)}
         className="w-40"
       />
-      <Select value={roleFilter} onValueChange={onRoleChange}>
+      <Select value={roleFilter} onValueChange={(v: string | null) => { if (v !== null) onRoleChange(v) }}>
         <SelectTrigger className="w-36">
           <SelectValue placeholder="All Roles" />
         </SelectTrigger>
@@ -47,7 +47,7 @@ export function AttendanceFilters({
           <SelectItem value="accountant">Accountant</SelectItem>
         </SelectContent>
       </Select>
-      <Select value={statusFilter} onValueChange={onStatusChange}>
+      <Select value={statusFilter} onValueChange={(v: string | null) => { if (v !== null) onStatusChange(v) }}>
         <SelectTrigger className="w-36">
           <SelectValue placeholder="All Status" />
         </SelectTrigger>

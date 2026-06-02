@@ -27,7 +27,7 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild {...({} as any)}>
         <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100 transition-colors outline-none">
           <Avatar className="w-7 h-7">
             <AvatarFallback className="bg-slate-700 text-white text-xs">
@@ -57,13 +57,13 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild {...({} as any)}>
             <Link href="/settings" className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               My Profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild {...({} as any)}>
             <Link href="/settings" className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
               Settings

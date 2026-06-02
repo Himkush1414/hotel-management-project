@@ -13,7 +13,7 @@ export default async function StaffPortalPage() {
   const { data: staff } = await supabase
     .from("staff")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("profile_id", user.id)
     .single();
 
   if (!staff) redirect("/login");
@@ -67,8 +67,8 @@ export default async function StaffPortalPage() {
               <div>
                 <p className="font-medium">{status.label}</p>
                 <p className="text-sm text-muted-foreground">
-                  {todayAttendance.check_in_time && `In: ${todayAttendance.check_in_time}`}
-                  {todayAttendance.check_out_time && ` · Out: ${todayAttendance.check_out_time}`}
+                  {todayAttendance.check_in && `In: ${todayAttendance.check_in}`}
+                  {todayAttendance.check_out && ` · Out: ${todayAttendance.check_out}`}
                 </p>
               </div>
             </div>

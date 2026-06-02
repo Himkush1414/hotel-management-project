@@ -11,7 +11,7 @@ export default async function FeatureFlagsPage() {
   const { data: staffProfile } = await supabase
     .from("staff")
     .select("role")
-    .eq("user_id", user.id)
+    .eq("profile_id", user.id)
     .single();
 
   if (staffProfile?.role !== "admin") redirect("/dashboard");
@@ -28,7 +28,7 @@ export default async function FeatureFlagsPage() {
         title="Feature Flags"
         subtitle="Enable or disable features for your hotel"
       />
-      <FeatureFlagsPanel initialFlags={flags ?? []} />
+      <FeatureFlagsPanel initialFlags={(flags ?? []) as any} />
     </div>
   );
 }

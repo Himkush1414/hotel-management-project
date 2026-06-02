@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { HotelSettingsForm } from "@/components/settings/HotelSettingsForm";
+import { Hotel } from "@/types/settings";
+import { HotelForm } from "@/components/settings/HotelForm";
 import { DangerZone } from "@/components/settings/DangerZone";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +13,7 @@ export default async function SettingsPage() {
   const { data: staffProfile } = await supabase
     .from("staff")
     .select("role")
-    .eq("user_id", user.id)
+    .eq("profile_id", user.id)
     .single();
 
   if (staffProfile?.role !== "admin") redirect("/dashboard");
@@ -29,7 +30,7 @@ export default async function SettingsPage() {
         title="Settings"
         subtitle="Manage your hotel configuration"
       />
-      <HotelSettingsForm hotel={hotel} />
+      <HotelForm hotel={hotel as any} />
       <DangerZone />
     </div>
   );

@@ -18,20 +18,20 @@ export default async function InvoiceDetailPage({ params }: Props) {
       .select(`
         *,
         booking:bookings(
-          id, check_in, check_out, booking_reference, adults, children, rate_per_night, total_nights,
+          id, check_in_date, check_out_date, booking_number, adults, children, room_rate, total_nights,
           guest:guests(full_name, phone, email, address, city, state),
-          room:rooms(room_number, floor, room_type:room_types(name, base_price))
+          room:rooms(room_number, floor, room_type_id:room_type_ids(name, base_price))
         )
       `)
       .eq('id', invoiceId)
       .eq('hotel_id', hotelId)
       .single(),
-    supabase
+    (supabase as any)
       .from('invoice_items')
       .select('*')
       .eq('invoice_id', invoiceId)
       .order('created_at'),
-    supabase
+    (supabase as any)
       .from('payments')
       .select('*')
       .eq('invoice_id', invoiceId)
@@ -41,22 +41,22 @@ export default async function InvoiceDetailPage({ params }: Props) {
   if (invoiceResult.error || !invoiceResult.data) notFound()
 
   const invoice = invoiceResult.data as Invoice
-  const items = itemsResult.data ?? []
-  const payments = paymentsResult.data ?? []
+  const items = (itemsResult.data ?? []) as any[]
+  const payments = (paymentsResult.data ?? []) as any[]
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Invoice ${invoice.invoice_number}`}
-        subtitle={`Booking ${(invoice as Invoice & { booking?: { booking_reference: string } }).booking?.booking_reference ?? ''}`}
-        backHref="/billing"
+        title={"Invoice "+invoice.invoice_number}
+        subtitle={"Booking "+((invoice as any).booking?.booking_number ?? (invoice as any).booking?.booking_reference ?? '')}
+       
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <InvoiceCard invoice={invoice} />
+          <InvoiceCard invoice={invoice as any} />
         </div>
         <div className="lg:col-span-2">
-          <InvoiceForm invoice={invoice} items={items} payments={payments} />
+          <InvoiceForm invoice={invoice as any} items={items} payments={payments as any} />
         </div>
       </div>
     </div>

@@ -21,9 +21,9 @@ interface StaffDocument {
   id: string;
   staff_id: string;
   document_type: string;
-  file_name: string;
+  document_name: string;
   file_url: string;
-  created_at: string;
+  uploaded_at: string;
 }
 
 const DOC_TYPES = [
@@ -40,8 +40,8 @@ interface Props {
 
 export function DocumentUpload({ staffId, initialDocuments }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
-  const { isAdmin } = usePermissions();
+  const toast = useToast();
+  const permissions = usePermissions();
   const [documents, setDocuments] = useState<StaffDocument[]>(initialDocuments);
   const [docType, setDocType] = useState("id_proof");
   const [uploading, setUploading] = useState(false);
@@ -59,29 +59,31 @@ export function DocumentUpload({ staffId, initialDocuments }: Props) {
       .upload(path, file);
 
     if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      toast.error(uploadError.message);
       setUploading(false);
       return;
     }
 
     const { data: publicUrl } = supabase.storage.from("hotel-files").getPublicUrl(path);
 
+    const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!;
     const { data, error } = await supabase
       .from("staff_documents")
       .insert({
+        hotel_id: hotelId,
         staff_id: staffId,
         document_type: docType,
-        file_name: file.name,
+        document_name: file.name,
         file_url: publicUrl.publicUrl,
-      })
+      } as any)
       .select()
       .single();
 
     if (error) {
-      toast({ title: "Error saving document", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
-      setDocuments((prev) => [data as StaffDocument, ...prev]);
-      toast({ title: "Document uploaded", description: `${file.name} uploaded successfully.` });
+      setDocuments((prev) => [data as unknown as StaffDocument, ...prev]);
+      toast.success(`Document uploaded — ${file.name} uploaded successfully.`);
     }
 
     setUploading(false);
@@ -96,10 +98,10 @@ export function DocumentUpload({ staffId, initialDocuments }: Props) {
   const handleDelete = async (doc: StaffDocument) => {
     const { error } = await supabase.from("staff_documents").delete().eq("id", doc.id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      toast({ title: "Document deleted" });
+      toast.success("Document deleted");
     }
   };
 
@@ -110,7 +112,7 @@ export function DocumentUpload({ staffId, initialDocuments }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3">
-          <Select value={docType} onValueChange={setDocType}>
+          <Select value={docType} onValueChange={(v) => { if (v !== null) setDocType(v) }}>
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
@@ -158,9 +160,9 @@ export function DocumentUpload({ staffId, initialDocuments }: Props) {
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-sm font-medium">{doc.file_name}</p>
+                    <p className="text-sm font-medium">{doc.document_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(doc.created_at)}
+                      {formatDate(doc.uploaded_at)}
                     </p>
                   </div>
                   <Badge variant="secondary" className="capitalize">
@@ -168,12 +170,10 @@ export function DocumentUpload({ staffId, initialDocuments }: Props) {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" asChild>
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted">
                       <Download className="h-4 w-4" />
                     </a>
-                  </Button>
-                  {isAdmin && (
+                  {permissions.role === "admin" && (
                     <Button
                       variant="ghost"
                       size="icon"

@@ -1,96 +1,73 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { useToast } from "@/hooks/useToast";
 
-type TableChangeEvent = "INSERT" | "UPDATE" | "DELETE" | "*";
+type TableRow = Record<string, unknown>;
 
-interface UseSupabaseRealtimeOptions<T extends Record<string, unknown>> {
+export interface UseSupabaseRealtimeOptions<T extends TableRow> {
   table: string;
-  event?: TableChangeEvent;
   filter?: string;
-  onData: (payload: RealtimePostgresChangesPayload<T>) => void;
+  onInsert?: (row: T) => void;
+  onUpdate?: (row: T) => void;
+  onDelete?: (row: Partial<T>) => void;
+  onData?: (payload: any) => void;
   enabled?: boolean;
 }
 
-export function useSupabaseRealtime<T extends Record<string, unknown>>({
+export function useSupabaseRealtime<T extends TableRow>({
   table,
-  event = "*",
   filter,
+  onInsert,
+  onUpdate,
+  onDelete,
   onData,
   enabled = true,
 }: UseSupabaseRealtimeOptions<T>): void {
   const supabase = createBrowserClient();
-  const { toast } = useToast();
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onDataRef = useRef(onData);
 
+  const onInsertRef = useRef(onInsert);
+  const onUpdateRef = useRef(onUpdate);
+  const onDeleteRef = useRef(onDelete);
+  const onDataRef = useRef(onData);
+  onInsertRef.current = onInsert;
+  onUpdateRef.current = onUpdate;
+  onDeleteRef.current = onDelete;
   onDataRef.current = onData;
 
-  const subscribe = useCallback(() => {
+  useEffect(() => {
     if (!enabled) return;
 
-    const channelName = filter
-      ? `realtime:${table}:${filter}`
-      : `realtime:${table}`;
-
+    const channelName = filter ? `rt:${table}:${filter}` : `rt:${table}`;
     const channel = supabase.channel(channelName);
 
-    const changesConfig: Parameters<typeof channel.on>[1] = {
-      event,
-      schema: "public",
-      table,
-      ...(filter ? { filter } : {}),
-    };
+    const config: any = { event: "*", schema: "public", table };
+    if (filter) config.filter = filter;
 
     channel
-      .on(
-        "postgres_changes" as Parameters<typeof channel.on>[0],
-        changesConfig,
-        (payload: RealtimePostgresChangesPayload<T>) => {
-          onDataRef.current(payload);
+      .on("postgres_changes" as any, config, (payload: any) => {
+        if (onDataRef.current) onDataRef.current(payload);
+        if (payload.eventType === "INSERT" && onInsertRef.current) {
+          onInsertRef.current(payload.new as T);
         }
-      )
-      .on("system" as Parameters<typeof channel.on>[0], {}, (status: { status: string }) => {
-        if (status.status === "CHANNEL_ERROR" || status.status === "TIMED_OUT") {
-          toast({
-            title: "Reconnecting...",
-            description: "Live updates connection lost. Reconnecting.",
-            variant: "destructive",
-          });
-
-          if (reconnectTimerRef.current) {
-            clearTimeout(reconnectTimerRef.current);
-          }
-
-          reconnectTimerRef.current = setTimeout(() => {
-            if (channelRef.current) {
-              supabase.removeChannel(channelRef.current);
-              channelRef.current = null;
-            }
-            subscribe();
-          }, 3000);
+        if (payload.eventType === "UPDATE" && onUpdateRef.current) {
+          onUpdateRef.current(payload.new as T);
+        }
+        if (payload.eventType === "DELETE" && onDeleteRef.current) {
+          onDeleteRef.current(payload.old as Partial<T>);
         }
       })
       .subscribe();
 
     channelRef.current = channel;
-  }, [enabled, table, event, filter, supabase, toast]);
-
-  useEffect(() => {
-    subscribe();
 
     return () => {
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-      }
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [subscribe, supabase]);
+  }, [enabled, table, filter, supabase]);
 }

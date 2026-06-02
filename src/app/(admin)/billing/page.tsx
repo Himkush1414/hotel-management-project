@@ -23,16 +23,16 @@ export default async function BillingPage({
     .select(`
       *,
       booking:bookings(
-        id, check_in, check_out, booking_reference,
+        id, check_in_date, check_out_date, booking_number,
         guest:guests(full_name, phone),
-        room:rooms(room_number, room_type:room_types(name))
+        room:rooms(room_number, room_type_id:room_type_ids(name))
       )
     `)
     .eq('hotel_id', hotelId)
     .order('created_at', { ascending: false })
     .limit(200)
 
-  if (status) query = query.eq('payment_status', status)
+  if (status) query = query.eq('payment_status', status as any)
   if (from)   query = query.gte('created_at', from)
   if (to)     query = query.lte('created_at', `${to}T23:59:59`)
 

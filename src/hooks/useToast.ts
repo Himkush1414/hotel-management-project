@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 export function useToast() {
   return {
     success: (message: string, description?: string) =>
-      toast.success(message, { description }),
+      toast(message, { description }),
 
     error: (message: string, description?: string) =>
       toast.error(message, { description }),

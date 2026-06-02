@@ -68,7 +68,7 @@ export function StaffTable({ initialStaff }: Props) {
               className="pl-9"
             />
           </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select value={roleFilter} onValueChange={(v) => { if (v !== null) setRoleFilter(v) }}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="All roles" />
             </SelectTrigger>
@@ -149,11 +149,9 @@ export function StaffTable({ initialStaff }: Props) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/staff/${member.id}`}>
+                      <Link href={`/staff/${member.id}`} className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted">
                           <Eye className="h-4 w-4" />
                         </Link>
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

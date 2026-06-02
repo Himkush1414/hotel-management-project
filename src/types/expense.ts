@@ -25,3 +25,12 @@ export interface ProfitLossSummary {
     percentage: number;
   }[];
 }
+
+export type Category = {
+  id: string;
+  hotel_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+}

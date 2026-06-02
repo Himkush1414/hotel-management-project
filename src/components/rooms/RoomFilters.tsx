@@ -46,27 +46,27 @@ export function RoomFilters({ floors, roomTypes, filters, onChange }: RoomFilter
         className="flex-wrap"
       >
         {STATUS_OPTIONS.map(s => (
-          <ToggleGroupItem key={s.value} value={s.value} size="sm" className="text-xs">
+          <ToggleGroupItem key={s.value} value={s.value} className="text-xs">
             {s.label}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
 
       {/* Floor filter */}
-      <Select value={filters.floor || 'all'} onValueChange={v => set('floor', v === 'all' ? '' : v)}>
+      <Select value={filters.floor || 'all'} onValueChange={v => set('floor', !v || v === 'all' ? '' : v)}>
         <SelectTrigger className="h-9 w-32 text-xs">
           <SelectValue placeholder="All floors" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Floors</SelectItem>
           {floors.map(f => (
-            <SelectItem key={f} value={String(f)}>Floor {f}</SelectItem>
+            <SelectItem key={String(f)} value={String(f ?? 0)}>Floor {f}</SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       {/* Room type filter */}
-      <Select value={filters.roomTypeId || 'all'} onValueChange={v => set('roomTypeId', v === 'all' ? '' : v)}>
+      <Select value={filters.roomTypeId || 'all'} onValueChange={v => set('roomTypeId', !v || v === 'all' ? '' : v)}>
         <SelectTrigger className="h-9 w-40 text-xs">
           <SelectValue placeholder="All types" />
         </SelectTrigger>

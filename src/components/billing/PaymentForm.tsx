@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/formatCurrency'
 import type { Invoice } from '@/types/billing'
 
-type PaymentMode = 'cash' | 'card' | 'online' | 'split'
+type PaymentMode = 'cash' | 'card' | 'razorpay' | 'split' | 'upi' | 'bank_transfer'
 
 interface PaymentFormProps {
   invoice: Invoice
@@ -42,9 +42,9 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
         invoice_id: invoice.id,
         hotel_id: invoice.hotel_id,
         amount: outstanding,
-        payment_mode: mode,
+        payment_mode: mode as any,
         payment_date: new Date().toISOString().split('T')[0],
-      })
+      } as any)
       if (insertError) throw insertError
 
       const { error: updateError } = await supabase
@@ -72,7 +72,7 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
         amount: splitCash,
         payment_mode: 'cash',
         payment_date: new Date().toISOString().split('T')[0],
-      })
+      } as any)
       if (cashError) throw cashError
 
       // Insert online portion
@@ -80,10 +80,10 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
         invoice_id: invoice.id,
         hotel_id: invoice.hotel_id,
         amount: splitOnline,
-        payment_mode: 'online',
+        payment_mode: 'razorpay',
         payment_date: new Date().toISOString().split('T')[0],
         transaction_id: onlineTransactionId,
-      })
+      } as any)
       if (onlineError) throw onlineError
 
       const { error: updateError } = await supabase
@@ -106,10 +106,10 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
         invoice_id: invoice.id,
         hotel_id: invoice.hotel_id,
         amount: outstanding,
-        payment_mode: 'online',
+        payment_mode: 'razorpay',
         payment_date: new Date().toISOString().split('T')[0],
         transaction_id: transactionId,
-      })
+      } as any)
       if (insertError) throw insertError
 
       const { error: updateError } = await supabase
@@ -150,7 +150,7 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
               <SelectContent>
                 <SelectItem value="cash">Cash</SelectItem>
                 <SelectItem value="card">Card (POS)</SelectItem>
-                <SelectItem value="online">Online (Razorpay)</SelectItem>
+                <SelectItem value="razorpay">Online (Razorpay)</SelectItem>
                 <SelectItem value="split">Split Payment</SelectItem>
               </SelectContent>
             </Select>
@@ -168,11 +168,11 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
           )}
 
           {/* Online via Razorpay */}
-          {mode === 'online' && (
+          {mode === 'razorpay' && (
             <RazorpayButton
               amount={outstanding}
               invoiceId={invoice.id}
-              guestName={invoice.guest_name ?? 'Guest'}
+              guestName={(invoice as any).guests?.full_name ?? 'Guest'}
               onSuccess={handleRazorpaySuccess}
             />
           )}
@@ -200,7 +200,7 @@ export function PaymentForm({ invoice, open, onClose, onSuccess }: PaymentFormPr
                 <RazorpayButton
                   amount={splitOnline}
                   invoiceId={invoice.id}
-                  guestName={invoice.guest_name ?? 'Guest'}
+                  guestName={(invoice as any).guests?.full_name ?? 'Guest'}
                   onSuccess={handleSplitPayment}
                   label={`Pay ${formatCurrency(splitOnline)} Online`}
                 />

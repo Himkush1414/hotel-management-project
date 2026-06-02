@@ -31,9 +31,9 @@ const PAYMENT_BADGE: Record<string, string> = {
 
 type InvoiceRow = Invoice & {
   booking?: {
-    booking_reference: string
-    check_in: string
-    check_out: string
+    booking_number: string
+    check_in_date: string
+    check_out_date: string
     guest?: { full_name: string }
     room?: { room_number: string }
   }
@@ -58,8 +58,8 @@ export function InvoiceTable({ invoices, activeStatus, fromDate, toDate }: Invoi
     router.push(`${pathname}?${next.toString()}`)
   }
 
-  const totalAmount = invoices.reduce((s, i) => s + (i.total ?? 0), 0)
-  const paidAmount  = invoices.filter(i => i.payment_status === 'paid').reduce((s, i) => s + (i.total ?? 0), 0)
+  const totalAmount = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0)
+  const paidAmount  = invoices.filter(i => i.payment_status === 'paid').reduce((s, i) => s + (i.total_amount ?? 0), 0)
 
   return (
     <div className="space-y-4">
@@ -90,9 +90,8 @@ export function InvoiceTable({ invoices, activeStatus, fromDate, toDate }: Invoi
           </TabsList>
         </Tabs>
         <DateRangePicker
-          from={fromDate}
-          to={toDate}
-          onChange={(f, t) => navigate({ from: f, to: t })}
+          value={{ from: fromDate, to: toDate }}
+          onChange={(range) => navigate({ from: range.from, to: range.to })}
         />
       </div>
 
@@ -121,9 +120,9 @@ export function InvoiceTable({ invoices, activeStatus, fromDate, toDate }: Invoi
                   </TableCell>
                   <TableCell className="text-sm">{inv.booking?.room?.room_number ?? '—'}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(inv.booking?.check_in ?? '')} – {formatDate(inv.booking?.check_out ?? '')}
+                    {formatDate(inv.booking?.check_in_date ?? '')} – {formatDate(inv.booking?.check_out_date ?? '')}
                   </TableCell>
-                  <TableCell className="text-right font-semibold">{formatCurrency(inv.total)}</TableCell>
+                  <TableCell className="text-right font-semibold">{formatCurrency(inv.total_amount)}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={PAYMENT_BADGE[inv.payment_status] ?? ''}>
                       {inv.payment_status}

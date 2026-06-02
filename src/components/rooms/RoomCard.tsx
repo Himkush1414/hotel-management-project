@@ -22,6 +22,7 @@ const BORDER_COLOR: Record<RoomStatus, string> = {
   occupied:    'border-l-blue-500',
   cleaning:    'border-l-amber-500',
   maintenance: 'border-l-red-500',
+  blocked:     'border-l-gray-500',
 }
 
 const NEXT_STATUSES: Record<RoomStatus, { label: string; value: RoomStatus }[]> = {
@@ -29,6 +30,7 @@ const NEXT_STATUSES: Record<RoomStatus, { label: string; value: RoomStatus }[]> 
   occupied:    [{ label: 'Mark Available', value: 'available' }, { label: 'Needs Cleaning', value: 'cleaning' }],
   cleaning:    [{ label: 'Mark Available', value: 'available' }, { label: 'Maintenance', value: 'maintenance' }],
   maintenance: [{ label: 'Mark Available', value: 'available' }, { label: 'Needs Cleaning', value: 'cleaning' }],
+  blocked:     [{ label: 'Mark Available', value: 'available' }],
 }
 
 interface RoomCardProps {
@@ -40,7 +42,7 @@ interface RoomCardProps {
 
 export function RoomCard({ room, canManage, onEdit, onStatusChange }: RoomCardProps) {
   const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
 
   const changeStatus = async (newStatus: RoomStatus) => {
@@ -53,9 +55,9 @@ export function RoomCard({ room, canManage, onEdit, onStatusChange }: RoomCardPr
 
       if (error) throw error
       onStatusChange(room.id, newStatus)
-      toast({ title: 'Status updated', description: `Room ${room.room_number} is now ${newStatus}.` })
+      toast.success('Status updated', { description: `Room ${room.room_number} is now ${newStatus}.` })
     } catch {
-      toast({ title: 'Error', description: 'Failed to update room status.', variant: 'destructive' })
+      toast.error('Failed to update room status.')
     } finally {
       setLoading(false)
     }
@@ -75,10 +77,10 @@ export function RoomCard({ room, canManage, onEdit, onStatusChange }: RoomCardPr
           <span className="text-xl font-bold leading-tight">{room.room_number}</span>
           {canManage && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+              <DropdownMenuTrigger onClick={e => e.stopPropagation()}>
+                <button className="inline-flex items-center justify-center h-6 w-6 rounded-md hover:bg-muted">
                   <MoreVertical className="h-3 w-3" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
                 <DropdownMenuItem onClick={() => onEdit(room)}>Edit Room</DropdownMenuItem>
@@ -96,16 +98,16 @@ export function RoomCard({ room, canManage, onEdit, onStatusChange }: RoomCardPr
       </CardHeader>
       <CardContent className="px-3 pb-3">
         <p className="truncate text-xs font-medium text-foreground/80">
-          {room.room_type?.name ?? 'Unknown type'}
+          {(room as any).room_type_id?.name ?? 'Unknown type'}
         </p>
-        {room.current_guest_name ? (
+        {(room as any).current_guest_name ? (
           <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground">
             <User className="h-3 w-3 shrink-0" />
-            {room.current_guest_name}
+            {(room as any).current_guest_name}
           </p>
         ) : (
           <p className="mt-1 text-xs text-muted-foreground">
-            ₹{room.room_type?.base_price?.toLocaleString('en-IN') ?? '—'}/night
+            ₹{(room as any).room_type_id?.base_price?.toLocaleString('en-IN') ?? '—'}/night
           </p>
         )}
       </CardContent>

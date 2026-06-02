@@ -23,7 +23,7 @@ export const settingsSchema = z.object({
     .optional()
     .or(z.literal("")),
   tax_percentage: z
-    .number({ invalid_type_error: "Tax percentage must be a number" })
+    .number({ message: "Tax percentage must be a number" })
     .min(0, "Tax percentage cannot be negative")
     .max(100, "Tax percentage cannot exceed 100"),
   currency: z
@@ -38,3 +38,5 @@ export const settingsSchema = z.object({
 });
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+export type SettingsFormData = z.infer<typeof settingsSchema>;

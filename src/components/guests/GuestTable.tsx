@@ -42,7 +42,7 @@ export function GuestTable({
   const params = useSearchParams()
   const [guests, setGuests] = useState<Guest[]>(initialGuests)
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const { canManageGuests } = usePermissions()
+  const permissions = usePermissions()
 
   useEffect(() => { setGuests(initialGuests) }, [initialGuests])
 
@@ -72,12 +72,12 @@ export function GuestTable({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <SearchInput
-          defaultValue={searchQuery}
+          value={searchQuery}
           placeholder="Search by name, phone or email…"
-          onSearch={handleSearch}
+          onChange={handleSearch}
           className="w-full max-w-sm"
         />
-        {canManageGuests && (
+        {permissions.can("EDIT_GUESTS") && (
           <Button size="sm" onClick={() => setIsFormOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             Add Guest
@@ -89,7 +89,7 @@ export function GuestTable({
         <EmptyState
           title="No guests found"
           description={searchQuery ? 'Try a different search term.' : 'Add your first guest to get started.'}
-          action={canManageGuests ? { label: 'Add Guest', onClick: () => setIsFormOpen(true) } : undefined}
+          action={permissions.can("EDIT_GUESTS") ? { label: 'Add Guest', onClick: () => setIsFormOpen(true) } : undefined}
         />
       ) : (
         <Card>

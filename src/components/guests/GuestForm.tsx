@@ -24,7 +24,7 @@ import type { Guest } from '@/types/guest'
 type GuestFormData = z.infer<typeof guestSchema>
 
 const ID_PROOF_TYPES = [
-  { value: 'aadhar',          label: 'Aadhaar Card'     },
+  { value: 'aadhaar',         label: 'Aadhaar Card'     },
   { value: 'passport',        label: 'Passport'         },
   { value: 'driving_license', label: 'Driving License'  },
   { value: 'voter_id',        label: 'Voter ID'         },
@@ -39,7 +39,7 @@ interface GuestFormProps {
 }
 
 export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
   const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!
 
@@ -47,7 +47,7 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
     resolver: zodResolver(guestSchema),
     defaultValues: {
       full_name: '', phone: '', email: '',
-      id_proof_type: 'aadhar', id_proof_number: '',
+      id_proof_type: 'aadhaar', id_proof_number: '',
       address: '', city: '', state: '',
     },
   })
@@ -63,10 +63,9 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
             }
           : {
               full_name: '', phone: '', email: '',
-              id_proof_type: 'aadhar', id_proof_number: '',
+              id_proof_type: 'aadhaar', id_proof_number: '',
               address: '', city: '', state: '',
-            }
-      )
+            } as any)
     }
   }, [open, guest, form])
 
@@ -81,7 +80,7 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
           .single()
         if (error) throw error
         onSaved(updated as Guest)
-        toast({ title: 'Guest updated' })
+        toast.success('Guest updated')
       } else {
         const { data: created, error } = await supabase
           .from('guests')
@@ -90,11 +89,11 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
           .single()
         if (error) throw error
         onSaved(created as Guest)
-        toast({ title: 'Guest added' })
+        toast.success('Guest added')
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
-      toast({ title: 'Error', description: msg, variant: 'destructive' })
+      toast.error(msg)
     }
   }
 
@@ -105,30 +104,30 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
           <DialogTitle>{guest ? 'Edit Guest' : 'Add New Guest'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="full_name" render={({ field }) => (
+              <FormField control={form.control} name="full_name" render={({ field }: { field: any }) => (
                 <FormItem className="col-span-2">
                   <FormLabel>Full Name</FormLabel>
                   <FormControl><Input placeholder="Ravi Kumar" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="phone" render={({ field }) => (
+              <FormField control={form.control} name="phone" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Phone</FormLabel>
                   <FormControl><Input placeholder="9876543210" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="email" render={({ field }) => (
+              <FormField control={form.control} name="email" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl><Input type="email" placeholder="ravi@example.com" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="id_proof_type" render={({ field }) => (
+              <FormField control={form.control} name="id_proof_type" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>ID Proof Type</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
@@ -142,7 +141,7 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="id_proof_number" render={({ field }) => (
+              <FormField control={form.control} name="id_proof_number" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>ID Number</FormLabel>
                   <FormControl><Input placeholder="XXXX-XXXX-XXXX" {...field} /></FormControl>
@@ -151,7 +150,7 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
               )} />
             </div>
 
-            <FormField control={form.control} name="address" render={({ field }) => (
+            <FormField control={form.control} name="address" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Address</FormLabel>
                 <FormControl><Textarea placeholder="Street address" rows={2} {...field} /></FormControl>
@@ -159,14 +158,14 @@ export function GuestForm({ guest, open, onClose, onSaved }: GuestFormProps) {
               </FormItem>
             )} />
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="city" render={({ field }) => (
+              <FormField control={form.control} name="city" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>City</FormLabel>
                   <FormControl><Input placeholder="Mumbai" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="state" render={({ field }) => (
+              <FormField control={form.control} name="state" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>State</FormLabel>
                   <FormControl><Input placeholder="Maharashtra" {...field} /></FormControl>

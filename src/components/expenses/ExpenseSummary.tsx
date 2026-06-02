@@ -110,7 +110,7 @@ export function ExpenseSummary({ expenses, totalRevenue, categories }: Props) {
                     <Cell key={index} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value: any) => formatCurrency(value)} />
                 <Legend
                   formatter={(value) => (
                     <span className="text-sm text-muted-foreground">{value}</span>

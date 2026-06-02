@@ -29,7 +29,7 @@ const ID_PROOF_LABELS: Record<string, string> = {
 export function GuestCard({ guest, totalStays, totalSpent }: GuestCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [currentGuest, setCurrentGuest] = useState<Guest>(guest)
-  const { canManageGuests } = usePermissions()
+  const permissions = usePermissions()
 
   return (
     <>
@@ -45,11 +45,11 @@ export function GuestCard({ guest, totalStays, totalSpent }: GuestCardProps) {
               <div>
                 <h2 className="text-lg font-semibold">{currentGuest.full_name}</h2>
                 <Badge variant="outline" className="mt-1 text-xs">
-                  {ID_PROOF_LABELS[currentGuest.id_proof_type] ?? currentGuest.id_proof_type}
+                  {ID_PROOF_LABELS[(currentGuest.id_proof_type ?? "")] ?? currentGuest.id_proof_type}
                 </Badge>
               </div>
             </div>
-            {canManageGuests && (
+            {permissions.can("EDIT_GUESTS") && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditOpen(true)}>
                 <Pencil className="h-4 w-4" />
               </Button>

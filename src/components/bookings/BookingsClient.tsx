@@ -37,7 +37,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 type BookingRow = Booking & {
   guest?: { id: string; full_name: string; phone: string }
-  room?: { id: string; room_number: string; room_type?: { name: string } }
+  room?: { id: string; room_number: string; room_type_id?: { name: string } }
 }
 
 interface BookingsClientProps {
@@ -56,7 +56,7 @@ export function BookingsClient({
   const params = useSearchParams()
   const [isCheckInOpen, setIsCheckInOpen] = useState(false)
   const [checkOutBooking, setCheckOutBooking] = useState<BookingRow | null>(null)
-  const { canManageBookings } = usePermissions()
+  const permissions = usePermissions()
 
   const navigate = (updates: Record<string, string>) => {
     const next = new URLSearchParams(params.toString())
@@ -77,12 +77,12 @@ export function BookingsClient({
           </TabsList>
         </Tabs>
         <SearchInput
-          defaultValue={searchQuery}
+          value={searchQuery}
           placeholder="Search guest or room…"
-          onSearch={q => navigate({ q, status: activeStatus })}
+          onChange={q => navigate({ q, status: activeStatus })}
           className="w-56"
         />
-        {canManageBookings && (
+        {permissions.can("CREATE_BOOKING") && (
           <Button size="sm" className="ml-auto" onClick={() => setIsCheckInOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Check In
@@ -94,7 +94,7 @@ export function BookingsClient({
         <EmptyState
           title="No bookings found"
           description="Try a different filter or create a new booking."
-          action={canManageBookings ? { label: 'New Check-In', onClick: () => setIsCheckInOpen(true) } : undefined}
+          action={permissions.can("CREATE_BOOKING") ? { label: 'New Check-In', onClick: () => setIsCheckInOpen(true) } : undefined}
         />
       ) : (
         <Card>
@@ -115,7 +115,7 @@ export function BookingsClient({
               {bookings.map(b => {
                 const isArriving   = todayArrivals.includes(b.id)
                 const isDeparting  = todayDepartures.includes(b.id)
-                const nights       = calculateNights(b.check_in, b.check_out)
+                const nights       = calculateNights(b.check_in_date, b.check_out_date)
                 return (
                   <TableRow
                     key={b.id}
@@ -124,7 +124,7 @@ export function BookingsClient({
                       isDeparting && 'bg-amber-50/50 dark:bg-amber-950/20'
                     )}
                   >
-                    <TableCell className="font-mono text-xs font-medium">{b.booking_reference}</TableCell>
+                    <TableCell className="font-mono text-xs font-medium">{b.booking_number}</TableCell>
                     <TableCell>
                       <div>
                         <p className="font-medium text-sm">{b.guest?.full_name ?? '—'}</p>
@@ -134,17 +134,17 @@ export function BookingsClient({
                     <TableCell>
                       <div>
                         <p className="font-medium">{b.room?.room_number ?? '—'}</p>
-                        <p className="text-xs text-muted-foreground">{b.room?.room_type?.name}</p>
+                        <p className="text-xs text-muted-foreground">{b.room?.room_type_id?.name}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {formatDate(b.check_in)}
+                      {formatDate(b.check_in_date)}
                       {isArriving && (
                         <Badge variant="outline" className="ml-2 text-[10px] bg-emerald-100 text-emerald-700 border-emerald-200">Today</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {formatDate(b.check_out)}
+                      {formatDate(b.check_out_date)}
                       {isDeparting && (
                         <Badge variant="outline" className="ml-2 text-[10px] bg-amber-100 text-amber-700 border-amber-200">Today</Badge>
                       )}
@@ -156,7 +156,7 @@ export function BookingsClient({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {b.status === 'active' && canManageBookings && (
+                      {b.status === 'checked_in' && permissions.can("CREATE_BOOKING") && (
                         <Button size="sm" variant="outline" onClick={() => setCheckOutBooking(b)}>
                           <LogOut className="mr-1 h-3 w-3" />
                           Check Out

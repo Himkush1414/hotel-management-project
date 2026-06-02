@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils/formatDate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import type { BookingWithDetails } from "@/types/booking";
@@ -37,12 +37,10 @@ export function RecentBookings({ bookings }: RecentBookingsProps) {
         <CardTitle className="text-base font-semibold">
           Recent Check-ins
         </CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/bookings" className="flex items-center gap-1 text-sm">
+        <Link href="/bookings" className={buttonVariants({ variant: "ghost", size: "sm" }) + " flex items-center gap-1 text-sm"}>
             View all
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        </Button>
       </CardHeader>
       <CardContent>
         {bookings.length === 0 ? (

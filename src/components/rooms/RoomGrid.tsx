@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RoomCard } from './RoomCard'
@@ -30,25 +30,25 @@ export function RoomGrid({ initialRooms, roomTypes }: RoomGridProps) {
   const [isTypeFormOpen, setIsTypeFormOpen] = useState(false)
   const [filters, setFilters] = useState<Filters>({ status: '', floor: '', roomTypeId: '' })
 
-  const { isAdmin, canManageRooms } = usePermissions()
+  const permissions = usePermissions()
   const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!
 
   useSupabaseRealtime<Room>({
     table: 'rooms',
     filter: `hotel_id=eq.${hotelId}`,
-    onUpdate: useCallback((updated: Room) => {
+    onUpdate: (updated: Room) => {
       setRooms(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r))
-    }, []),
-    onInsert: useCallback((inserted: Room) => {
+    },
+    onInsert: (inserted: Room) => {
       setRooms(prev => [...prev, inserted])
-    }, []),
-    onDelete: useCallback((deleted: Partial<Room>) => {
+    },
+    onDelete: (deleted: Partial<Room>) => {
       setRooms(prev => prev.filter(r => r.id !== deleted.id))
-    }, []),
+    },
   })
 
-  const floors = useMemo(() => {
-    const s = new Set(rooms.map(r => r.floor))
+  const floors = useMemo((): number[] => {
+    const s = new Set(rooms.map(r => r.floor ?? 0))
     return Array.from(s).sort((a, b) => a - b)
   }, [rooms])
 
@@ -60,7 +60,7 @@ export function RoomGrid({ initialRooms, roomTypes }: RoomGridProps) {
   }), [rooms, filters])
 
   const byFloor = useMemo(() => floors.reduce<Record<number, Room[]>>((acc, f) => {
-    acc[f] = filtered.filter(r => r.floor === f)
+    acc[f ?? 0] = filtered.filter(r => r.floor === f)
     return acc
   }, {}), [filtered, floors])
 
@@ -98,9 +98,9 @@ export function RoomGrid({ initialRooms, roomTypes }: RoomGridProps) {
           filters={filters}
           onChange={setFilters}
         />
-        {canManageRooms && (
+        {permissions.can("EDIT_ROOMS") && (
           <div className="ml-auto flex gap-2">
-            {isAdmin && (
+            {permissions.can("TOGGLE_FEATURE_FLAGS") && (
               <Button variant="outline" size="sm" onClick={() => setIsTypeFormOpen(true)}>
                 <Plus className="mr-1 h-4 w-4" />
                 Room Type
@@ -122,7 +122,7 @@ export function RoomGrid({ initialRooms, roomTypes }: RoomGridProps) {
               ? 'Try adjusting your filters.'
               : 'Get started by adding your first room.'
           }
-          action={canManageRooms ? { label: 'Add Room', onClick: handleAddRoom } : undefined}
+          action={permissions.can("EDIT_ROOMS") ? { label: 'Add Room', onClick: handleAddRoom } : undefined}
         />
       ) : (
         <div className="space-y-8">
@@ -144,7 +144,7 @@ export function RoomGrid({ initialRooms, roomTypes }: RoomGridProps) {
                     room={room}
                     onEdit={handleEdit}
                     onStatusChange={handleStatusChange}
-                    canManage={canManageRooms}
+                    canManage={permissions.can("EDIT_ROOMS")}
                   />
                 ))}
               </div>

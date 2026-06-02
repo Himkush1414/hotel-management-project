@@ -39,7 +39,7 @@ interface RoomFormProps {
 }
 
 export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormProps) {
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
   const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!
 
@@ -65,8 +65,7 @@ export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormPr
               status: room.status,
               notes: room.notes ?? '',
             }
-          : { room_number: '', floor: 1, room_type_id: '', status: 'available', notes: '' }
-      )
+          : { room_number: '', floor: 1, room_type_id: '', status: 'available', notes: '' } as any)
     }
   }, [open, room, form])
 
@@ -77,25 +76,25 @@ export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormPr
           .from('rooms')
           .update({ ...data, updated_at: new Date().toISOString() })
           .eq('id', room.id)
-          .select('*, room_type:room_types(*)')
+          .select('*, room_type_id:room_type_ids(*)')
           .single()
         if (error) throw error
         const roomType = roomTypes.find(rt => rt.id === data.room_type_id)
-        onSaved({ ...updated, room_type: roomType ?? updated.room_type } as Room)
-        toast({ title: 'Room updated', description: `Room ${data.room_number} has been updated.` })
+        onSaved({ ...updated, room_type_id: roomType ?? updated.room_type_id } as unknown as Room)
+        toast.success('Room updated', { description: `Room ${data.room_number} has been updated.` })
       } else {
         const { data: created, error } = await supabase
           .from('rooms')
           .insert({ ...data, hotel_id: hotelId })
-          .select('*, room_type:room_types(*)')
+          .select('*, room_type_id:room_type_ids(*)')
           .single()
         if (error) throw error
-        onSaved(created as Room)
-        toast({ title: 'Room created', description: `Room ${data.room_number} has been added.` })
+        onSaved(created as unknown as Room)
+        toast.success('Room created', { description: `Room ${data.room_number} has been added.` })
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
-      toast({ title: 'Error', description: msg, variant: 'destructive' })
+      toast.error(msg)
     }
   }
 
@@ -108,14 +107,14 @@ export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormPr
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="room_number" render={({ field }) => (
+              <FormField control={form.control} name="room_number" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Room Number</FormLabel>
                   <FormControl><Input placeholder="101" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="floor" render={({ field }) => (
+              <FormField control={form.control} name="floor" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Floor</FormLabel>
                   <FormControl>
@@ -127,7 +126,7 @@ export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormPr
               )} />
             </div>
 
-            <FormField control={form.control} name="room_type_id" render={({ field }) => (
+            <FormField control={form.control} name="room_type_id" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Room Type</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
@@ -142,7 +141,7 @@ export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormPr
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="status" render={({ field }) => (
+            <FormField control={form.control} name="status" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
@@ -157,7 +156,7 @@ export function RoomForm({ room, roomTypes, open, onClose, onSaved }: RoomFormPr
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="notes" render={({ field }) => (
+            <FormField control={form.control} name="notes" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Notes</FormLabel>
                 <FormControl>

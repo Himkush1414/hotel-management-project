@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { LogIn, UserPlus, Receipt, BarChart3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface QuickAction {
@@ -48,18 +48,14 @@ export function QuickActions() {
       <CardContent>
         <div className="grid grid-cols-2 gap-2">
           {actions.map((action) => (
-            <Button
+            <Link
               key={action.href}
-              variant={action.variant}
-              size="sm"
-              className="h-auto flex-col gap-1.5 py-3"
-              asChild
+              href={action.href}
+              className={buttonVariants({ variant: action.variant, size: "sm" }) + " h-auto flex-col gap-1.5 py-3"}
             >
-              <Link href={action.href}>
-                <action.icon className="h-4 w-4" />
-                <span className="text-xs">{action.label}</span>
-              </Link>
-            </Button>
+              <action.icon className="h-4 w-4" />
+              <span className="text-xs">{action.label}</span>
+            </Link>
           ))}
         </div>
       </CardContent>

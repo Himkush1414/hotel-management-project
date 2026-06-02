@@ -48,6 +48,13 @@ export const ACTIONS = {
 
   // Audit
   VIEW_AUDIT_LOG: "VIEW_AUDIT_LOG",
+
+  // Friendly aliases used in components
+  manage_staff:    "EDIT_STAFF",
+  manage_rooms:    "EDIT_ROOMS",
+  manage_guests:   "EDIT_GUESTS",
+  manage_bookings: "CREATE_BOOKING",
+  admin:           "TOGGLE_FEATURE_FLAGS",
 } as const;
 
 export type Action = (typeof ACTIONS)[keyof typeof ACTIONS];

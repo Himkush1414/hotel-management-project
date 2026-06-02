@@ -11,7 +11,7 @@ export default async function MyAttendancePage() {
   const { data: staff } = await supabase
     .from("staff")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("profile_id", user.id)
     .single();
 
   if (!staff) redirect("/login");
@@ -29,7 +29,7 @@ export default async function MyAttendancePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 p-4">
       <PageHeader title="My Attendance" subtitle="Your attendance record this month" />
-      <AttendanceSummary attendance={attendance ?? []} staff={staff} />
+      <AttendanceSummary attendance={(attendance ?? []) as any} staff={staff} />
     </div>
   );
 }

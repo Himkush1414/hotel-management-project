@@ -89,7 +89,7 @@ export function RevenueChart({ data }: Props) {
             domain={[0, maxVal * 1.1]}
           />
           <Tooltip
-            formatter={(value: number) => formatCurrency(value)}
+            formatter={(value: any) => formatCurrency(value)}
             contentStyle={{ fontSize: 12, borderRadius: 8 }}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />

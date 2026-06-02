@@ -41,7 +41,7 @@ interface Props {
 
 export function StaffForm({ open, onClose, staff, onSaved }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
 
   const form = useForm<StaffFormData>({
     resolver: zodResolver(staffSchema),
@@ -50,11 +50,10 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
       phone: "",
       role: "receptionist",
       date_of_joining: "",
-      basic_salary: 0,
+      salary: 0,
       email: "",
       address: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
+      emergency_contact: "",
     },
   });
 
@@ -65,11 +64,10 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
         phone: staff.phone ?? "",
         role: staff.role as StaffFormData["role"],
         date_of_joining: staff.date_of_joining ?? "",
-        basic_salary: staff.basic_salary ?? 0,
+        salary: staff.salary ?? 0,
         email: staff.email ?? "",
         address: staff.address ?? "",
-        emergency_contact_name: staff.emergency_contact_name ?? "",
-        emergency_contact_phone: staff.emergency_contact_phone ?? "",
+        emergency_contact: staff.emergency_contact ?? "",
       });
     } else {
       form.reset({
@@ -77,11 +75,10 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
         phone: "",
         role: "receptionist",
         date_of_joining: "",
-        basic_salary: 0,
+        salary: 0,
         email: "",
         address: "",
-        emergency_contact_name: "",
-        emergency_contact_phone: "",
+        emergency_contact: "",
       });
     }
   }, [staff, form]);
@@ -94,18 +91,18 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
     if (staff) {
       result = await supabase
         .from("staff")
-        .update(payload)
+        .update(payload as any)
         .eq("id", staff.id)
         .select()
         .single();
     } else {
-      result = await supabase.from("staff").insert(payload).select().single();
+      result = await supabase.from("staff").insert(payload as any).select().single();
     }
 
     if (result.error) {
-      toast({ title: "Error", description: result.error.message, variant: "destructive" });
+      toast.error(result.error.message);
     } else {
-      toast({ title: staff ? "Staff updated" : "Staff added", description: `${data.full_name} has been ${staff ? "updated" : "added"}.` });
+      toast.success(`${staff ? "Staff updated" : "Staff added"} — ${data.full_name} has been ${staff ? "updated" : "added"}.`);
       onSaved(result.data as Staff);
     }
   };
@@ -122,7 +119,7 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="full_name"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
@@ -135,7 +132,7 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="role"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -159,7 +156,7 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="phone"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
@@ -172,7 +169,7 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="email"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
@@ -185,7 +182,7 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="date_of_joining"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Date of Joining</FormLabel>
                     <FormControl>
@@ -197,8 +194,8 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               />
               <FormField
                 control={form.control}
-                name="basic_salary"
-                render={({ field }) => (
+                name="salary"
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Basic Salary (₹)</FormLabel>
                     <FormControl>
@@ -216,7 +213,7 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="address"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Address</FormLabel>
                     <FormControl>
@@ -228,21 +225,9 @@ export function StaffForm({ open, onClose, staff, onSaved }: Props) {
               />
               <FormField
                 control={form.control}
-                name="emergency_contact_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Emergency Contact Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Jane Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="emergency_contact_phone"
-                render={({ field }) => (
+                name="emergency_contact"
+          
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Emergency Contact Phone</FormLabel>
                     <FormControl>

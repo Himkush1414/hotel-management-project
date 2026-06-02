@@ -13,10 +13,10 @@ export default async function AnalyticsPage() {
 
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("total_amount, created_at, status")
+    .select("total_amount, created_at, payment_status")
     .eq("hotel_id", hotelId)
     .gte("created_at", thirtyDaysAgo.toISOString())
-    .eq("status", "paid")
+    .eq("payment_status", "paid")
     .order("created_at", { ascending: true });
 
   const { data: bookings } = await supabase

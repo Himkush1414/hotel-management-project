@@ -46,7 +46,7 @@ export function OccupancyChart({ data }: Props) {
           width={40}
         />
         <Tooltip
-          formatter={(value: number) => [`${value}%`, "Occupancy"]}
+          formatter={(value: any) => [`${value}%`, "Occupancy"]}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
         <Area

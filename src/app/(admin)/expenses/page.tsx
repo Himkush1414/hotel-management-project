@@ -25,7 +25,7 @@ export default async function ExpensesPage() {
     .select("total_amount")
     .eq("hotel_id", process.env.NEXT_PUBLIC_HOTEL_ID!)
     .gte("created_at", startOfMonth)
-    .eq("status", "paid");
+    .eq("payment_status", "paid");
 
   const totalRevenue = (revenueData ?? []).reduce(
     (sum, inv) => sum + (inv.total_amount ?? 0),
@@ -39,13 +39,13 @@ export default async function ExpensesPage() {
         subtitle="Monitor and manage hotel expenses"
       />
       <ExpenseSummary
-        expenses={expenses ?? []}
+        expenses={(expenses ?? []) as any}
         totalRevenue={totalRevenue}
-        categories={categories ?? []}
+        categories={(categories ?? []) as any}
       />
       <ExpenseTable
-        initialExpenses={expenses ?? []}
-        categories={categories ?? []}
+        initialExpenses={(expenses ?? []) as any}
+        categories={(categories ?? []) as any}
       />
     </div>
   );

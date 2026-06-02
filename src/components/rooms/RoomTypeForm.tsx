@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { roomTypeSchema } from '@/lib/validations/room'
+import type { RoomTypeFormData as _RoomTypeFormData } from '@/lib/validations/room'
 import type { RoomType } from '@/types/room'
 
 type RoomTypeFormData = z.infer<typeof roomTypeSchema>
@@ -32,12 +33,12 @@ interface RoomTypeFormProps {
 export function RoomTypeForm({ roomType, open, onClose, onSaved }: RoomTypeFormProps) {
   const [amenities, setAmenities] = useState<string[]>([])
   const [amenityInput, setAmenityInput] = useState('')
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
   const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!
 
   const form = useForm<RoomTypeFormData>({
-    resolver: zodResolver(roomTypeSchema),
+    resolver: zodResolver(roomTypeSchema) as any,
     defaultValues: {
       name: '',
       description: '',
@@ -83,28 +84,28 @@ export function RoomTypeForm({ roomType, open, onClose, onSaved }: RoomTypeFormP
 
       if (roomType) {
         const { data: updated, error } = await supabase
-          .from('room_types')
-          .update({ ...payload, updated_at: new Date().toISOString() })
+          .from('room_type_ids')
+          .update({ ...payload, updated_at: new Date().toISOString() } as any)
           .eq('id', roomType.id)
           .select()
           .single()
         if (error) throw error
         onSaved?.(updated as RoomType)
-        toast({ title: 'Room type updated' })
+        toast.success('Room type updated')
       } else {
         const { data: created, error } = await supabase
-          .from('room_types')
-          .insert(payload)
+          .from('room_type_ids')
+          .insert(payload as any)
           .select()
           .single()
         if (error) throw error
         onSaved?.(created as RoomType)
-        toast({ title: 'Room type created' })
+        toast.success('Room type created')
       }
       onClose()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
-      toast({ title: 'Error', description: msg, variant: 'destructive' })
+      toast.error(msg)
     }
   }
 
@@ -115,8 +116,8 @@ export function RoomTypeForm({ roomType, open, onClose, onSaved }: RoomTypeFormP
           <DialogTitle>{roomType ? 'Edit Room Type' : 'Add Room Type'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
+            <FormField control={form.control} name="name" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl><Input placeholder="e.g. Deluxe Suite" {...field} /></FormControl>
@@ -125,7 +126,7 @@ export function RoomTypeForm({ roomType, open, onClose, onSaved }: RoomTypeFormP
             )} />
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="base_price" render={({ field }) => (
+              <FormField control={form.control} name="base_price" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Base Price (₹/night)</FormLabel>
                   <FormControl>
@@ -135,7 +136,7 @@ export function RoomTypeForm({ roomType, open, onClose, onSaved }: RoomTypeFormP
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="max_occupancy" render={({ field }) => (
+              <FormField control={form.control} name="max_occupancy" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Max Occupancy</FormLabel>
                   <FormControl>
@@ -147,7 +148,7 @@ export function RoomTypeForm({ roomType, open, onClose, onSaved }: RoomTypeFormP
               )} />
             </div>
 
-            <FormField control={form.control} name="description" render={({ field }) => (
+            <FormField control={form.control} name="description" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>

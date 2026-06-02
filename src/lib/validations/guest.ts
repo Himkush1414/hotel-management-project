@@ -17,7 +17,7 @@ export const guestSchema = z.object({
     .or(z.literal("")),
   id_proof_type: z.enum(
     ["aadhaar", "passport", "driving_license", "voter_id", "pan_card"],
-    { required_error: "ID proof type is required" }
+    { message: "ID proof type is required" }
   ),
   id_proof_number: z
     .string()

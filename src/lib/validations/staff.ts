@@ -12,13 +12,13 @@ export const staffSchema = z.object({
     .regex(indianPhoneRegex, "Enter a valid 10-digit Indian phone number"),
   role: z.enum(
     ["admin", "manager", "receptionist", "housekeeping", "maintenance", "accountant"],
-    { required_error: "Role is required" }
+    { message: "Role is required" }
   ),
   date_of_joining: z
     .string()
     .min(1, "Date of joining is required"),
-  basic_salary: z
-    .number({ invalid_type_error: "Salary must be a number" })
+  salary: z
+    .number({ message: "Salary must be a number" })
     .positive("Salary must be greater than 0"),
   email: z
     .string()
@@ -29,13 +29,13 @@ export const staffSchema = z.object({
     .string()
     .min(5, "Address must be at least 5 characters")
     .max(300, "Address must be at most 300 characters"),
-  emergency_contact_name: z
+  emergency_contact: z
     .string()
-    .min(2, "Emergency contact name must be at least 2 characters")
-    .max(100, "Emergency contact name must be at most 100 characters"),
-  emergency_contact_phone: z
-    .string()
-    .regex(indianPhoneRegex, "Enter a valid 10-digit Indian phone number for emergency contact"),
+    .min(2, "Emergency contact must be at least 2 characters")
+    .max(100, "Emergency contact must be at most 100 characters")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type StaffFormValues = z.infer<typeof staffSchema>;
+export type StaffFormData = z.infer<typeof staffSchema>;

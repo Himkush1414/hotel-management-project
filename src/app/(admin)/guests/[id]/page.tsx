@@ -26,12 +26,12 @@ export default async function GuestDetailPage({ params }: Props) {
       .from('bookings')
       .select(`
         *,
-        room:rooms(room_number, room_type:room_types(name)),
-        invoices(id, invoice_number, total, payment_status)
+        room:rooms(room_number, room_type_id:room_type_ids(name)),
+        invoices(id, invoice_number, total_amount, payment_status)
       `)
       .eq('guest_id', id)
       .eq('hotel_id', hotelId)
-      .order('check_in', { ascending: false }),
+      .order('check_in_date', { ascending: false }),
   ])
 
   if (guestResult.error || !guestResult.data) notFound()
@@ -40,16 +40,16 @@ export default async function GuestDetailPage({ params }: Props) {
   const bookings = (bookingsResult.data ?? []) as Booking[]
 
   const totalSpent = bookings.reduce<number>((sum, b) => {
-    const invoices = (b as Booking & { invoices?: Array<{ total: number }> }).invoices ?? []
-    return sum + invoices.reduce((s, inv) => s + (inv.total ?? 0), 0)
+    const invoices = (b as Booking & { invoices?: Array<{ total_amount: number }> }).invoices ?? []
+    return sum + invoices.reduce((s, inv) => s + (inv.total_amount ?? 0), 0)
   }, 0)
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={guest.full_name}
-        subtitle={`Guest profile · ${bookings.length} stays`}
-        backHref="/guests"
+        subtitle={"Guest profile · "+bookings.length+" stays"}
+       
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">

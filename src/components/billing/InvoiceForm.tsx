@@ -25,11 +25,11 @@ interface Payment {
 
 type InvoiceWithDetails = Invoice & {
   booking?: {
-    booking_reference: string
-    check_in: string
-    check_out: string
+    booking_number: string
+    check_in_date: string
+    check_out_date: string
     total_nights: number
-    rate_per_night: number
+    room_rate: number
     adults: number
     children: number
     guest?: {
@@ -40,7 +40,7 @@ type InvoiceWithDetails = Invoice & {
       city?: string | null
       state?: string | null
     }
-    room?: { room_number: string; floor?: number; room_type?: { name: string } }
+    room?: { room_number: string; floor?: number; room_type_id?: { name: string } }
   }
 }
 
@@ -96,10 +96,10 @@ export function InvoiceForm({ invoice, items, payments }: InvoiceFormProps) {
           </div>
           <div className="space-y-1 text-right">
             <p className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Stay Details</p>
-            <p className="font-semibold">Room {r?.room_number} · {r?.room_type?.name}</p>
-            <p>Ref: {b?.booking_reference}</p>
-            <p>Check-in: {formatDate(b?.check_in ?? '')}</p>
-            <p>Check-out: {formatDate(b?.check_out ?? '')}</p>
+            <p className="font-semibold">Room {r?.room_number} · {r?.room_type_id?.name}</p>
+            <p>Ref: {b?.booking_number}</p>
+            <p>Check-in: {formatDate(b?.check_in_date ?? '')}</p>
+            <p>Check-out: {formatDate(b?.check_out_date ?? '')}</p>
             <p>{b?.total_nights ?? 0} night{(b?.total_nights ?? 0) !== 1 ? 's' : ''} · {b?.adults ?? 0} adult{(b?.adults ?? 0) !== 1 ? 's' : ''}</p>
           </div>
         </div>
@@ -121,12 +121,12 @@ export function InvoiceForm({ invoice, items, payments }: InvoiceFormProps) {
               {/* Room charge */}
               <tr>
                 <td className="py-2.5 pr-4">
-                  Room {r?.room_number} ({r?.room_type?.name}) — Accommodation
+                  Room {r?.room_number} ({r?.room_type_id?.name}) — Accommodation
                 </td>
                 <td className="py-2.5 pr-4 text-right">{b?.total_nights ?? 0} nights</td>
-                <td className="py-2.5 pr-4 text-right">{formatCurrency(b?.rate_per_night ?? 0)}</td>
+                <td className="py-2.5 pr-4 text-right">{formatCurrency(b?.room_rate ?? 0)}</td>
                 <td className="py-2.5 text-right font-medium">
-                  {formatCurrency((b?.total_nights ?? 0) * (b?.rate_per_night ?? 0))}
+                  {formatCurrency((b?.total_nights ?? 0) * (b?.room_rate ?? 0))}
                 </td>
               </tr>
               {/* Extra items */}
@@ -155,19 +155,19 @@ export function InvoiceForm({ invoice, items, payments }: InvoiceFormProps) {
               <span>{formatCurrency(invoice.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">GST ({invoice.tax_percentage ?? 12}%)</span>
+              <span className="text-muted-foreground">GST ({invoice.tax_amount ?? 12}%)</span>
               <span>{formatCurrency(invoice.tax_amount)}</span>
             </div>
-            {invoice.discount > 0 && (
+            {invoice.discount_amount > 0 && (
               <div className="flex justify-between text-emerald-600">
                 <span>Discount</span>
-                <span>−{formatCurrency(invoice.discount)}</span>
+                <span>−{formatCurrency(invoice.discount_amount)}</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between text-base font-bold">
               <span>Total</span>
-              <span>{formatCurrency(invoice.total)}</span>
+              <span>{formatCurrency(invoice.total_amount)}</span>
             </div>
           </div>
         </div>

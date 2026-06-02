@@ -3,7 +3,7 @@ import { z } from "zod";
 export const expenseSchema = z.object({
   category_id: z.string().uuid("Invalid category selected"),
   amount: z
-    .number({ invalid_type_error: "Amount must be a number" })
+    .number({ message: "Amount must be a number" })
     .positive("Amount must be greater than 0"),
   description: z
     .string()
@@ -11,7 +11,7 @@ export const expenseSchema = z.object({
     .max(300, "Description must be at most 300 characters"),
   expense_date: z.string().min(1, "Expense date is required"),
   payment_mode: z.enum(["cash", "upi", "bank_transfer", "card", "cheque"], {
-    required_error: "Payment mode is required",
+    message: "Payment mode is required",
   }),
   receipt_url: z
     .string()
@@ -21,3 +21,5 @@ export const expenseSchema = z.object({
 });
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
+
+export type ExpenseFormData = z.infer<typeof expenseSchema>;

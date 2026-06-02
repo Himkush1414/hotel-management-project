@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
             <FormField
               control={form.control}
               name="password"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>New password</FormLabel>
                   <FormControl>
@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
             <FormField
               control={form.control}
               name="confirmPassword"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Confirm new password</FormLabel>
                   <FormControl>

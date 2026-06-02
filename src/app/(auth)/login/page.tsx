@@ -100,7 +100,7 @@ export default function LoginPage() {
             <FormField
               control={form.control}
               name="email"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Email address</FormLabel>
                   <FormControl>
@@ -120,7 +120,7 @@ export default function LoginPage() {
             <FormField
               control={form.control}
               name="password"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <div className="flex items-center justify-between">
                     <FormLabel>Password</FormLabel>
@@ -166,7 +166,7 @@ export default function LoginPage() {
       <CardFooter className="justify-center pt-0">
         <p className="text-xs text-slate-500">
           Having trouble?{' '}
-          
+          <a
             href="mailto:support@hotelos.com"
             className="text-slate-900 font-medium hover:underline"
           >

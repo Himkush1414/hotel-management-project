@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function StaffCard({ staff }: Props) {
-  const { canManageStaff } = usePermissions();
+  const permissions = usePermissions();
   const [editing, setEditing] = useState(false);
   const [current, setCurrent] = useState(staff);
 
@@ -89,19 +89,19 @@ export function StaffCard({ staff }: Props) {
                 )}
               </div>
 
-              {canManageStaff && current.basic_salary !== null && (
+              {permissions.can("EDIT_STAFF") && current.salary !== null && (
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-sm text-muted-foreground">
                     Basic Salary:{" "}
                     <span className="font-semibold text-foreground">
-                      {formatCurrency(current.basic_salary ?? 0)}
+                      {formatCurrency(current.salary ?? 0)}
                     </span>
                   </p>
                 </div>
               )}
             </div>
 
-            {canManageStaff && (
+            {permissions.can("EDIT_STAFF") && (
               <Button
                 variant="outline"
                 size="sm"

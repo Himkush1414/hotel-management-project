@@ -24,14 +24,14 @@ interface Invoice {
   invoice_number: string
   subtotal: number
   tax_amount: number
-  discount: number
-  total: number
+  discount_amount: number
+  total_amount: number
   payment_status: string
 }
 
 type BookingWithExtras = Booking & {
   guest?: { full_name: string; phone: string }
-  room?: { room_number: string; room_type?: { name: string } }
+  room?: { room_number: string; room_type_id?: { name: string } }
 }
 
 interface CheckOutFormProps {
@@ -46,7 +46,7 @@ export function CheckOutForm({ booking, open, onClose, onSuccess }: CheckOutForm
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function CheckOutForm({ booking, open, onClose, onSuccess }: CheckOutForm
       // Mark invoice as paid
       await supabase
         .from('invoices')
-        .update({ payment_status: 'paid', payment_mode: paymentMode })
+        .update({ payment_status: 'paid', payment_mode: paymentMode } as any)
         .eq('id', invoice.id)
 
       // Update booking status
@@ -89,17 +89,17 @@ export function CheckOutForm({ booking, open, onClose, onSuccess }: CheckOutForm
         .update({ status: 'cleaning', updated_at: new Date().toISOString() })
         .eq('id', booking.room_id)
 
-      toast({ title: 'Check-out complete', description: `Room ${booking.room?.room_number} is now set to cleaning.` })
+      toast.success('Check-out complete', { description: `Room ${booking.room?.room_number} is now set to cleaning.` })
       onSuccess()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Check-out failed'
-      toast({ title: 'Error', description: msg, variant: 'destructive' })
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
   }
 
-  const nights = calculateNights(booking.check_in, booking.check_out)
+  const nights = calculateNights(booking.check_in_date, booking.check_out_date)
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
@@ -117,9 +117,9 @@ export function CheckOutForm({ booking, open, onClose, onSuccess }: CheckOutForm
               <p className="font-semibold">{booking.guest?.full_name}</p>
               <p className="text-muted-foreground">{booking.guest?.phone}</p>
               <p className="text-muted-foreground">
-                {formatDate(booking.check_in)} → {formatDate(booking.check_out)} · {nights} night{nights !== 1 ? 's' : ''}
+                {formatDate(booking.check_in_date)} → {formatDate(booking.check_out_date)} · {nights} night{nights !== 1 ? 's' : ''}
               </p>
-              <p className="text-muted-foreground">{booking.room?.room_type?.name}</p>
+              <p className="text-muted-foreground">{booking.room?.room_type_id?.name}</p>
             </div>
 
             {/* Invoice Summary */}
@@ -133,16 +133,16 @@ export function CheckOutForm({ booking, open, onClose, onSuccess }: CheckOutForm
                   <span className="text-muted-foreground">GST</span>
                   <span>{formatCurrency(invoice.tax_amount)}</span>
                 </div>
-                {invoice.discount > 0 && (
+                {invoice.discount_amount > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Discount</span>
-                    <span>-{formatCurrency(invoice.discount)}</span>
+                    <span>-{formatCurrency(invoice.discount_amount)}</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between text-base font-bold">
                   <span>Total Due</span>
-                  <span>{formatCurrency(invoice.total)}</span>
+                  <span>{formatCurrency(invoice.total_amount)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className={

@@ -10,7 +10,7 @@ const getAdminClient = () =>
 
 export interface AuditLogParams {
   hotel_id: string;
-  user_id: string;
+  performed_by: string;
   action: string;
   entity_type: string;
   entity_id: string;
@@ -26,16 +26,16 @@ export async function logAction(params: AuditLogParams): Promise<void> {
   try {
     const supabaseAdmin = getAdminClient();
 
-    const { error } = await supabaseAdmin.from("audit_logs").insert({
+    const { error } = await supabaseAdmin.from("audit_logs").insert(({
       hotel_id: params.hotel_id,
-      user_id: params.user_id,
+      performed_by: params.performed_by,
       action: params.action,
-      entity_type: params.entity_type,
-      entity_id: params.entity_id,
+      table_name: params.entity_type,
+      record_id: params.entity_id,
       old_value: params.old_value ?? null,
       new_value: params.new_value ?? null,
       created_at: new Date().toISOString(),
-    });
+    }) as any);
 
     if (error) {
       console.error(

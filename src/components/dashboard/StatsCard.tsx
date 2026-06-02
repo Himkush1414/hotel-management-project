@@ -1,6 +1,7 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import React from "react";
+import * as LucideIcons from "lucide-react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils/cn";
 interface StatsCardProps {
   title: string;
   value: number;
-  icon: LucideIcon;
+  icon: string;
   change: number;
   format?: "currency" | "number";
   subtitle?: string;
@@ -18,7 +19,7 @@ interface StatsCardProps {
 export function StatsCard({
   title,
   value,
-  icon: Icon,
+  icon,
   change,
   format = "number",
   subtitle,
@@ -26,6 +27,7 @@ export function StatsCard({
   const isPositive = change > 0;
   const isNegative = change < 0;
   const isNeutral = change === 0;
+  const Icon = (LucideIcons as any)[icon] as React.ElementType;
 
   const formattedValue =
     format === "currency" ? formatCurrency(value) : value.toString();
@@ -36,7 +38,7 @@ export function StatsCard({
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+            {Icon && <Icon className="h-5 w-5 text-primary" />}
           </div>
         </div>
 

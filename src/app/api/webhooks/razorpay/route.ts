@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient as createAdminClient } from "@/lib/supabase/server";
 
 function verifyWebhookSignature(body: string, signature: string): boolean {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET!;
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         );
       }
 
-      const supabase = createAdminClient();
+      const supabase = await createAdminClient();
 
       const { error: invoiceError } = await supabase
         .from("invoices")
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           payment_mode: "razorpay",
           razorpay_order_id: payment.order_id,
           razorpay_payment_id: payment.id,
-          paid_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
         });
       }
     }

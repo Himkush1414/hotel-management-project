@@ -7,15 +7,15 @@ export const bookingSchema = z
     check_in_date: z.string().min(1, "Check-in date is required"),
     check_out_date: z.string().min(1, "Check-out date is required"),
     room_rate: z
-      .number({ invalid_type_error: "Room rate must be a number" })
+      .number({ message: "Room rate must be a number" })
       .positive("Room rate must be greater than 0"),
     adults: z
-      .number({ invalid_type_error: "Number of adults must be a number" })
+      .number({ message: "Number of adults must be a number" })
       .int("Adults must be a whole number")
       .min(1, "At least 1 adult is required")
       .max(10, "Maximum 10 adults allowed"),
     children: z
-      .number({ invalid_type_error: "Number of children must be a number" })
+      .number({ message: "Number of children must be a number" })
       .int("Children must be a whole number")
       .min(0, "Children cannot be negative")
       .max(10, "Maximum 10 children allowed"),

@@ -45,13 +45,13 @@ interface ExtrasFormProps {
 }
 
 export function ExtrasForm({ invoice, open, onClose, onSaved }: ExtrasFormProps) {
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
 
   const form = useForm<ExtrasFormData>({
-    resolver: zodResolver(extrasSchema),
+    resolver: zodResolver(extrasSchema) as any,
     defaultValues: { description: '', amount: 0, quantity: 1, category: 'other' },
-  })
+  } as any)
 
   useEffect(() => {
     if (open) form.reset({ description: '', amount: 0, quantity: 1, category: 'other' })
@@ -62,37 +62,37 @@ export function ExtrasForm({ invoice, open, onClose, onSaved }: ExtrasFormProps)
       const lineAmount = data.amount * data.quantity
 
       // Add invoice item
-      const { error: itemErr } = await supabase.from('invoice_items').insert({
+      const { error: itemErr } = await (supabase as any).from('invoice_items').insert({ 
         invoice_id: invoice.id,
         description: data.description,
         quantity: data.quantity,
         unit_price: data.amount,
         amount: lineAmount,
         category: data.category,
-      })
+       })
       if (itemErr) throw itemErr
 
       // Update invoice totals
       const newSubtotal   = invoice.subtotal + lineAmount
-      const taxAmount     = newSubtotal * ((invoice.tax_percentage ?? 12) / 100)
-      const newTotal      = newSubtotal + taxAmount - invoice.discount
+      const taxAmount     = newSubtotal * ((invoice.tax_amount ?? 12) / 100)
+      const newTotal      = newSubtotal + taxAmount - invoice.discount_amount
 
       const { error: invErr } = await supabase
         .from('invoices')
         .update({
           subtotal: newSubtotal,
           tax_amount: taxAmount,
-          total: newTotal,
+          total_amount: newTotal,
           updated_at: new Date().toISOString(),
         })
         .eq('id', invoice.id)
       if (invErr) throw invErr
 
-      toast({ title: 'Extra charge added' })
+      toast.success('Extra charge added')
       onSaved()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to add charge'
-      toast({ title: 'Error', description: msg, variant: 'destructive' })
+      toast.error(msg)
     }
   }
 
@@ -103,8 +103,8 @@ export function ExtrasForm({ invoice, open, onClose, onSaved }: ExtrasFormProps)
           <DialogTitle>Add Extra Charge</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="description" render={({ field }) => (
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
+            <FormField control={form.control} name="description" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl><Input placeholder="Room service — dinner" {...field} /></FormControl>
@@ -112,7 +112,7 @@ export function ExtrasForm({ invoice, open, onClose, onSaved }: ExtrasFormProps)
               </FormItem>
             )} />
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="amount" render={({ field }) => (
+              <FormField control={form.control} name="amount" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Unit Price (₹)</FormLabel>
                   <FormControl>
@@ -121,7 +121,7 @@ export function ExtrasForm({ invoice, open, onClose, onSaved }: ExtrasFormProps)
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="quantity" render={({ field }) => (
+              <FormField control={form.control} name="quantity" render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Quantity</FormLabel>
                   <FormControl>
@@ -131,7 +131,7 @@ export function ExtrasForm({ invoice, open, onClose, onSaved }: ExtrasFormProps)
                 </FormItem>
               )} />
             </div>
-            <FormField control={form.control} name="category" render={({ field }) => (
+            <FormField control={form.control} name="category" render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>

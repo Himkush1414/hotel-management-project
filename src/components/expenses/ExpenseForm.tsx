@@ -58,7 +58,7 @@ interface Props {
 
 export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -83,18 +83,18 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
         amount: data.amount,
         description: data.description,
         expense_date: data.expense_date,
-        payment_mode: data.payment_mode,
+        payment_mode: data.payment_mode as any,
         receipt_url: data.receipt_url || null,
-      })
+      } as any)
       .select("*, expense_categories(id, name, color)")
       .single();
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
-      toast({ title: "Expense added", description: `${data.description} recorded.` });
+      toast.success(`Expense added — ${data.description} recorded.`);
       form.reset();
-      onSaved(saved as Expense);
+      onSaved(saved as unknown as Expense);
     }
   };
 
@@ -110,7 +110,7 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="expense_date"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Date</FormLabel>
                     <FormControl>
@@ -123,7 +123,7 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="category_id"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -147,7 +147,7 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="amount"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Amount (₹)</FormLabel>
                     <FormControl>
@@ -166,7 +166,7 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
               <FormField
                 control={form.control}
                 name="payment_mode"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Payment Mode</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -191,7 +191,7 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
             <FormField
               control={form.control}
               name="description"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
@@ -204,7 +204,7 @@ export function ExpenseForm({ open, onClose, categories, onSaved }: Props) {
             <FormField
               control={form.control}
               name="receipt_url"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Receipt URL (optional)</FormLabel>
                   <FormControl>

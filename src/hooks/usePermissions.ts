@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   hasPermission,
   hasAnyPermission,
-  type Permission,
+  type Action,
 } from '@/config/permissions'
 import type { Role } from '@/constants/roles'
 
@@ -11,8 +11,8 @@ export function usePermissions() {
   const role = (profile?.role ?? 'receptionist') as Role
 
   return {
-    can:    (permission: Permission) => hasPermission(role, permission),
-    canAny: (permissions: Permission[]) => hasAnyPermission(role, permissions),
+    can:    (permission: Action) => hasPermission(role, permission),
+    canAny: (permissions: Action[]) => hasAnyPermission(role, permissions),
     role,
   }
 }

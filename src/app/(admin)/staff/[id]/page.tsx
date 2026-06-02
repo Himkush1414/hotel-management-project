@@ -47,7 +47,7 @@ export default async function StaffDetailPage({ params }: Props) {
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
         <TabsContent value="attendance" className="mt-4">
-          <AttendanceSummary attendance={attendance ?? []} staff={staff} />
+          <AttendanceSummary attendance={(attendance ?? []) as any} staff={staff} />
         </TabsContent>
         <TabsContent value="documents" className="mt-4">
           <DocumentUpload staffId={id} initialDocuments={documents ?? []} />

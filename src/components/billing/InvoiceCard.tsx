@@ -20,13 +20,13 @@ const PAYMENT_BADGE: Record<string, string> = {
 
 type InvoiceWithBooking = Invoice & {
   booking?: {
-    booking_reference: string
-    check_in: string
-    check_out: string
+    booking_number: string
+    check_in_date: string
+    check_out_date: string
     total_nights: number
-    rate_per_night: number
+    room_rate: number
     guest?: { full_name: string; phone: string }
-    room?: { room_number: string; room_type?: { name: string } }
+    room?: { room_number: string; room_type_id?: { name: string } }
   }
 }
 
@@ -60,12 +60,12 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
             <div className="space-y-1 text-sm">
               <p className="font-semibold">{b.guest?.full_name}</p>
               <p className="text-muted-foreground">{b.guest?.phone}</p>
-              <p className="text-muted-foreground">Room {b.room?.room_number} · {b.room?.room_type?.name}</p>
+              <p className="text-muted-foreground">Room {b.room?.room_number} · {b.room?.room_type_id?.name}</p>
               <p className="text-muted-foreground">
-                {formatDate(b.check_in)} → {formatDate(b.check_out)}
+                {formatDate(b.check_in_date)} → {formatDate(b.check_out_date)}
               </p>
               <p className="text-muted-foreground">
-                {b.total_nights} night{b.total_nights !== 1 ? 's' : ''} @ {formatCurrency(b.rate_per_night)}
+                {b.total_nights} night{b.total_nights !== 1 ? 's' : ''} @ {formatCurrency(b.room_rate)}
               </p>
             </div>
           )}
@@ -78,19 +78,19 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
               <span>{formatCurrency(invoice.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tax ({invoice.tax_percentage ?? 12}%)</span>
+              <span className="text-muted-foreground">Tax ({invoice.tax_amount ?? 12}%)</span>
               <span>{formatCurrency(invoice.tax_amount)}</span>
             </div>
-            {invoice.discount > 0 && (
+            {invoice.discount_amount > 0 && (
               <div className="flex justify-between text-emerald-600">
                 <span>Discount</span>
-                <span>−{formatCurrency(invoice.discount)}</span>
+                <span>−{formatCurrency(invoice.discount_amount)}</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between font-bold text-base">
               <span>Total</span>
-              <span>{formatCurrency(invoice.total)}</span>
+              <span>{formatCurrency(invoice.total_amount)}</span>
             </div>
           </div>
 

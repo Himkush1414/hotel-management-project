@@ -20,7 +20,7 @@ export default async function NotificationsPage() {
         title="Notifications"
         subtitle="Stay updated with hotel activity"
       />
-      <NotificationList initialNotifications={notifications ?? []} />
+      <NotificationList initialNotifications={(notifications ?? []) as any} />
     </div>
   );
 }

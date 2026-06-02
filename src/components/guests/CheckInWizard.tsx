@@ -47,17 +47,17 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [isLoadingRooms, setIsLoadingRooms] = useState(false)
-  const { toast } = useToast()
+  const toast = useToast()
   const supabase = createClient()
   const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      check_in: new Date().toISOString().split('T')[0],
-      check_out: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      check_in_date: new Date().toISOString().split('T')[0],
+      check_out_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
       adults: 1, children: 0,
-      rate_per_night: 0,
+      room_rate: 0,
       special_requests: '',
     },
   })
@@ -83,7 +83,7 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
     try {
       const { data } = await supabase
         .from('rooms')
-        .select('*, room_type:room_types(*)')
+        .select('*, room_type_id:room_type_ids(*)')
         .eq('hotel_id', hotelId)
         .eq('status', 'available')
         .order('floor')
@@ -95,14 +95,14 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
   }, [supabase, hotelId])
 
   const goToStep2 = () => {
-    if (!selectedGuest) { toast({ title: 'Select a guest', variant: 'destructive' }); return }
+    if (!selectedGuest) { toast.error('Select a guest'); return }
     setStep(2)
     loadAvailableRooms()
   }
 
   const goToStep3 = () => {
-    if (!selectedRoom) { toast({ title: 'Select a room', variant: 'destructive' }); return }
-    form.setValue('rate_per_night', selectedRoom.room_type?.base_price ?? 0)
+    if (!selectedRoom) { toast.error('Select a room'); return }
+    form.setValue('room_rate', (selectedRoom as any).room_type_id?.base_price ?? 0)
     setStep(3)
   }
 
@@ -116,7 +116,7 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
     if (!selectedGuest || !selectedRoom) return
     const data = form.getValues()
     try {
-      const nights = calculateNights(data.check_in, data.check_out)
+      const nights = calculateNights(data.check_in_date, data.check_out_date)
       const ref = `BK-${Date.now().toString(36).toUpperCase()}`
 
       // Create booking
@@ -126,16 +126,16 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
           hotel_id: hotelId,
           guest_id: selectedGuest.id,
           room_id: selectedRoom.id,
-          booking_reference: ref,
-          check_in: data.check_in,
-          check_out: data.check_out,
-          status: 'active',
+          booking_number: ref,
+          check_in_date: data.check_in_date,
+          check_out_date: data.check_out_date,
+          status: 'checked_in',
           adults: data.adults,
           children: data.children,
-          rate_per_night: data.rate_per_night,
+          room_rate: data.room_rate,
           total_nights: nights,
           special_requests: data.special_requests ?? null,
-        })
+        } as any)
         .select()
         .single()
 
@@ -145,28 +145,27 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
       await supabase.from('rooms').update({ status: 'occupied' }).eq('id', selectedRoom.id)
 
       // Create initial invoice
-      const subtotal = nights * data.rate_per_night
+      const subtotal = nights * data.room_rate
       const taxAmount = subtotal * 0.12
       const total = subtotal + taxAmount
 
-      await supabase.from('invoices').insert({
+      await (supabase as any).from('invoices').insert({
         hotel_id: hotelId,
         booking_id: booking.id,
         invoice_number: generateInvoiceNumber(),
         subtotal,
-        tax_percentage: 12,
         tax_amount: taxAmount,
-        discount: 0,
-        total,
+        discount_amount: 0,
+        total_amount: total,
         payment_status: 'pending',
       })
 
-      toast({ title: 'Check-in successful!', description: `Booking ${ref} created.` })
+      toast.success('Check-in successful!', { description: `Booking ${ref} created.` })
       handleClose()
       onSuccess()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Check-in failed'
-      toast({ title: 'Error', description: msg, variant: 'destructive' })
+      toast.error(msg)
     }
   }
 
@@ -182,8 +181,8 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
   }
 
   const watchedData = form.watch()
-  const nights = calculateNights(watchedData.check_in ?? '', watchedData.check_out ?? '')
-  const subtotal = (nights > 0 ? nights : 0) * (watchedData.rate_per_night ?? 0)
+  const nights = calculateNights(watchedData.check_in_date ?? '', watchedData.check_out_date ?? '')
+  const subtotal = (nights > 0 ? nights : 0) * (watchedData.room_rate ?? 0)
 
   return (
     <Dialog open={open} onOpenChange={v => !v && handleClose()}>
@@ -278,8 +277,8 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
                       onClick={() => setSelectedRoom(r)}
                     >
                       <p className="font-bold text-lg">{r.room_number}</p>
-                      <p className="text-xs text-muted-foreground">{r.room_type?.name}</p>
-                      <p className="text-xs font-medium mt-0.5">₹{(r.room_type?.base_price ?? 0).toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-muted-foreground">{(r as any).room_type_id?.name}</p>
+                      <p className="text-xs font-medium mt-0.5">₹{((r as any).room_type_id?.base_price ?? 0).toLocaleString('en-IN')}</p>
                     </div>
                   ))}
                   {availableRooms.length === 0 && (
@@ -301,21 +300,21 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
             <Form {...form}>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="check_in" render={({ field }) => (
+                  <FormField control={form.control} name="check_in_date" render={({ field }: { field: any }) => (
                     <FormItem>
                       <FormLabel>Check-in Date</FormLabel>
                       <FormControl><Input type="date" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="check_out" render={({ field }) => (
+                  <FormField control={form.control} name="check_out_date" render={({ field }: { field: any }) => (
                     <FormItem>
                       <FormLabel>Check-out Date</FormLabel>
                       <FormControl><Input type="date" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="adults" render={({ field }) => (
+                  <FormField control={form.control} name="adults" render={({ field }: { field: any }) => (
                     <FormItem>
                       <FormLabel>Adults</FormLabel>
                       <FormControl>
@@ -324,7 +323,7 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="children" render={({ field }) => (
+                  <FormField control={form.control} name="children" render={({ field }: { field: any }) => (
                     <FormItem>
                       <FormLabel>Children</FormLabel>
                       <FormControl>
@@ -333,7 +332,7 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="rate_per_night" render={({ field }) => (
+                  <FormField control={form.control} name="room_rate" render={({ field }: { field: any }) => (
                     <FormItem className="col-span-2">
                       <FormLabel>Rate per Night (₹)</FormLabel>
                       <FormControl>
@@ -343,7 +342,7 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
                     </FormItem>
                   )} />
                 </div>
-                <FormField control={form.control} name="special_requests" render={({ field }) => (
+                <FormField control={form.control} name="special_requests" render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Special Requests</FormLabel>
                     <FormControl><Textarea placeholder="Any special requests?" rows={2} {...field} /></FormControl>
@@ -370,15 +369,15 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Room</span>
-                  <span className="font-medium">{selectedRoom?.room_number} · {selectedRoom?.room_type?.name}</span>
+                  <span className="font-medium">{selectedRoom?.room_number} · {(selectedRoom as any)?.room_type_id?.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Check-in</span>
-                  <span>{formatDate(watchedData.check_in ?? '')}</span>
+                  <span>{formatDate(watchedData.check_in_date ?? '')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Check-out</span>
-                  <span>{formatDate(watchedData.check_out ?? '')}</span>
+                  <span>{formatDate(watchedData.check_out_date ?? '')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nights</span>
@@ -386,7 +385,7 @@ export function CheckInWizard({ open, onClose, onSuccess }: CheckInWizardProps) 
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Rate/night</span>
-                  <span>{formatCurrency(watchedData.rate_per_night ?? 0)}</span>
+                  <span>{formatCurrency(watchedData.room_rate ?? 0)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">

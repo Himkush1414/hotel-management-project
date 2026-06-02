@@ -34,8 +34,8 @@ import { useToast } from "@/hooks/useToast";
 const schema = z.object({
   staff_id: z.string().min(1, "Select a staff member"),
   date: z.string().min(1, "Date is required"),
-  check_in_time: z.string().optional(),
-  check_out_time: z.string().optional(),
+  check_in: z.string().optional(),
+  check_out: z.string().optional(),
   status: z.enum(["present", "absent", "late", "half_day"]),
   notes: z.string().optional(),
 });
@@ -53,8 +53,8 @@ interface AttendanceRecord {
   staff_id: string;
   date: string;
   status: string;
-  check_in_time: string | null;
-  check_out_time: string | null;
+  check_in: string | null;
+  check_out: string | null;
   notes: string | null;
   staff?: StaffRef | null;
 }
@@ -70,15 +70,15 @@ interface Props {
 
 export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDate, onSaved }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       staff_id: "",
       date: defaultDate,
-      check_in_time: "",
-      check_out_time: "",
+      check_in: "",
+      check_out: "",
       status: "present",
       notes: "",
     },
@@ -89,8 +89,8 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
       form.reset({
         staff_id: record.staff_id,
         date: record.date,
-        check_in_time: record.check_in_time ?? "",
-        check_out_time: record.check_out_time ?? "",
+        check_in: record.check_in ?? "",
+        check_out: record.check_out ?? "",
         status: record.status as FormData["status"],
         notes: record.notes ?? "",
       });
@@ -98,8 +98,8 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
       form.reset({
         staff_id: "",
         date: defaultDate,
-        check_in_time: "",
-        check_out_time: "",
+        check_in: "",
+        check_out: "",
         status: "present",
         notes: "",
       });
@@ -107,11 +107,13 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
   }, [record, defaultDate, form]);
 
   const onSubmit = async (data: FormData) => {
+    const hotelId = process.env.NEXT_PUBLIC_HOTEL_ID!;
     const payload = {
+      hotel_id: hotelId,
       staff_id: data.staff_id,
       date: data.date,
-      check_in_time: data.check_in_time || null,
-      check_out_time: data.check_out_time || null,
+      check_in: data.check_in || null,
+      check_out: data.check_out || null,
       status: data.status,
       notes: data.notes || null,
     };
@@ -133,10 +135,10 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
     }
 
     if (result.error) {
-      toast({ title: "Error", description: result.error.message, variant: "destructive" });
+      toast.error(result.error.message);
     } else {
-      toast({ title: record ? "Attendance updated" : "Attendance marked" });
-      onSaved(result.data as AttendanceRecord);
+      toast.success(record ? "Attendance updated" : "Attendance marked");
+      onSaved(result.data as unknown as AttendanceRecord);
     }
   };
 
@@ -151,7 +153,7 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
             <FormField
               control={form.control}
               name="staff_id"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Staff Member</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -176,7 +178,7 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
               <FormField
                 control={form.control}
                 name="date"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Date</FormLabel>
                     <FormControl>
@@ -189,7 +191,7 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
               <FormField
                 control={form.control}
                 name="status"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -211,8 +213,8 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
               />
               <FormField
                 control={form.control}
-                name="check_in_time"
-                render={({ field }) => (
+                name="check_in"
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Check In Time</FormLabel>
                     <FormControl>
@@ -224,8 +226,8 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
               />
               <FormField
                 control={form.control}
-                name="check_out_time"
-                render={({ field }) => (
+                name="check_out"
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Check Out Time</FormLabel>
                     <FormControl>
@@ -239,7 +241,7 @@ export function MarkAttendanceForm({ open, onClose, record, allStaff, defaultDat
             <FormField
               control={form.control}
               name="notes"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>

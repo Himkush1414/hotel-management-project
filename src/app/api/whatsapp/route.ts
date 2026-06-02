@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { createServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type TemplateType = "check_in_confirmation" | "bill_summary" | "checkout_reminder";
@@ -53,7 +52,7 @@ function buildCheckoutReminderMessage(guestName: string, roomNumber: string, che
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Authenticate the requesting user
-    const supabase = await createServerClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { data: staffData, error: staffError } = await supabase
       .from("staff")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("profile_id", user.id)
       .single();
 
     if (staffError || !staffData) {
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Use admin client for data fetching
-    const supabaseAdmin = createClient<Database>(
+    const supabaseAdmin = require("@supabase/supabase-js").createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }

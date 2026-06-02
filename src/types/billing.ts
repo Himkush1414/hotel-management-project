@@ -21,3 +21,18 @@ export interface InvoiceWithDetails extends Invoice {
   amount_paid: number;
   balance_due: number;
 }
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  category?: string;
+}
+
+export interface DataPoint {
+  date: string;
+  revenue: number;
+  [key: string]: string | number;
+}

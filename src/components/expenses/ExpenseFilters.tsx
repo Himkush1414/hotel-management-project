@@ -68,7 +68,7 @@ export function ExpenseFilters({
         className="w-36"
         placeholder="To"
       />
-      <Select value={categoryFilter} onValueChange={onCategoryChange}>
+      <Select value={categoryFilter} onValueChange={(v: string | null) => { if (v !== null) onCategoryChange(v) }}>
         <SelectTrigger className="w-36">
           <SelectValue placeholder="All Categories" />
         </SelectTrigger>
@@ -81,7 +81,7 @@ export function ExpenseFilters({
           ))}
         </SelectContent>
       </Select>
-      <Select value={paymentFilter} onValueChange={onPaymentChange}>
+      <Select value={paymentFilter} onValueChange={(v: string | null) => { if (v !== null) onPaymentChange(v) }}>
         <SelectTrigger className="w-36">
           <SelectValue placeholder="Payment Mode" />
         </SelectTrigger>

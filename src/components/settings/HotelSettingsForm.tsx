@@ -38,7 +38,7 @@ interface Props {
 
 export function HotelSettingsForm({ hotel }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(hotel?.logo_url ?? null);
   const [uploading, setUploading] = useState(false);
@@ -62,12 +62,12 @@ export function HotelSettingsForm({ hotel }: Props) {
     const path = `hotel-logos/${process.env.NEXT_PUBLIC_HOTEL_ID}.${ext}`;
     const { error } = await supabase.storage.from("hotel-files").upload(path, file, { upsert: true });
     if (error) {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
       const { data } = supabase.storage.from("hotel-files").getPublicUrl(path);
       setLogoUrl(data.publicUrl);
       await supabase.from("hotels").update({ logo_url: data.publicUrl }).eq("id", process.env.NEXT_PUBLIC_HOTEL_ID!);
-      toast({ title: "Logo updated" });
+      toast.success('Logo updated');
     }
     setUploading(false);
   };
@@ -75,13 +75,13 @@ export function HotelSettingsForm({ hotel }: Props) {
   const onSubmit = async (data: SettingsFormData) => {
     const { error } = await supabase
       .from("hotels")
-      .update(data)
+      .update(data as any)
       .eq("id", process.env.NEXT_PUBLIC_HOTEL_ID!);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
-      toast({ title: "Settings saved", description: "Hotel settings updated successfully." });
+      toast.success('Settings saved — Hotel settings updated successfully.');
     }
   };
 
@@ -128,7 +128,7 @@ export function HotelSettingsForm({ hotel }: Props) {
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Hotel Name</FormLabel>
                   <FormControl>
@@ -141,7 +141,7 @@ export function HotelSettingsForm({ hotel }: Props) {
             <FormField
               control={form.control}
               name="address"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
@@ -155,7 +155,7 @@ export function HotelSettingsForm({ hotel }: Props) {
               <FormField
                 control={form.control}
                 name="phone"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
@@ -168,7 +168,7 @@ export function HotelSettingsForm({ hotel }: Props) {
               <FormField
                 control={form.control}
                 name="email"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
@@ -181,7 +181,7 @@ export function HotelSettingsForm({ hotel }: Props) {
               <FormField
                 control={form.control}
                 name="website"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Website</FormLabel>
                     <FormControl>
@@ -194,7 +194,7 @@ export function HotelSettingsForm({ hotel }: Props) {
               <FormField
                 control={form.control}
                 name="currency"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
                     <FormControl>
@@ -207,7 +207,7 @@ export function HotelSettingsForm({ hotel }: Props) {
               <FormField
                 control={form.control}
                 name="tax_percentage"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>Tax Percentage (%)</FormLabel>
                     <FormControl>

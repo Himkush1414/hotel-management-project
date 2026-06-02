@@ -27,14 +27,14 @@ interface Props {
 
 export function NotificationList({ initialNotifications }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
 
-  useSupabaseRealtime<Notification>({
+  useSupabaseRealtime<any>({
     table: "notifications",
     filter: `hotel_id=eq.${process.env.NEXT_PUBLIC_HOTEL_ID}`,
-    onInsert: (payload) => {
-      setNotifications((prev) => [payload.new, ...prev]);
+    onInsert: (row: any) => {
+      setNotifications((prev) => [row, ...prev]);
     },
   });
 
@@ -52,7 +52,7 @@ export function NotificationList({ initialNotifications }: Props) {
     if (ids.length === 0) return;
     await supabase.from("notifications").update({ is_read: true }).in("id", ids);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    toast({ title: "All notifications marked as read" });
+    toast.success("All notifications marked as read");
   };
 
   return (

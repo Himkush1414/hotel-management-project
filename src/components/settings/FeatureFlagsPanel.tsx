@@ -48,7 +48,7 @@ interface Props {
 
 export function FeatureFlagsPanel({ initialFlags }: Props) {
   const supabase = createClient();
-  const { toast } = useToast();
+  const toast = useToast();
   const [flags, setFlags] = useState<FeatureFlag[]>(initialFlags);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -62,15 +62,13 @@ export function FeatureFlagsPanel({ initialFlags }: Props) {
       .eq("id", flag.id);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     } else {
       setFlags((prev) =>
         prev.map((f) => (f.id === flag.id ? { ...f, is_enabled: newValue } : f))
       );
       const meta = FLAG_LABELS[flag.flag_name];
-      toast({
-        title: `${meta?.label ?? flag.flag_name} ${newValue ? "enabled" : "disabled"}`,
-      });
+      toast.success(`${meta?.label ?? flag.flag_name} ${newValue ? "enabled" : "disabled"}`);
     }
     setSaving(null);
   };

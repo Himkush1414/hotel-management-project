@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
             <FormField
               control={form.control}
               name="email"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Email address</FormLabel>
                   <FormControl>

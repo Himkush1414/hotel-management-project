@@ -14,7 +14,7 @@ export default async function MyTasksPage() {
   const { data: staff } = await supabase
     .from("staff")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("profile_id", user.id)
     .single();
 
   if (!staff) redirect("/login");
@@ -26,7 +26,7 @@ export default async function MyTasksPage() {
   if (staff.role === "housekeeping") {
     const { data: rooms } = await supabase
       .from("rooms")
-      .select("id, room_number, floor, room_types(name)")
+      .select("id, room_number, floor, room_type_ids(name)")
       .eq("hotel_id", process.env.NEXT_PUBLIC_HOTEL_ID!)
       .eq("status", "cleaning");
 
@@ -148,7 +148,7 @@ export default async function MyTasksPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 p-4">
-      <PageHeader title="My Tasks" subtitle={`Tasks for ${formatDate(today)}`} />
+      <PageHeader title="My Tasks" subtitle={"Tasks for "+formatDate(today)} />
       {tasks}
     </div>
   );

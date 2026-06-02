@@ -28,8 +28,8 @@ interface AttendanceRecord {
   staff_id: string;
   date: string;
   status: string;
-  check_in_time: string | null;
-  check_out_time: string | null;
+  check_in: string | null;
+  check_out: string | null;
   notes: string | null;
   staff?: StaffRef | null;
 }
@@ -48,7 +48,7 @@ interface Props {
 
 export function AttendanceTable({ initialAttendance, allStaff }: Props) {
   const supabase = createClient();
-  const { canManageStaff } = usePermissions();
+  const permissions = usePermissions();
   const [attendance, setAttendance] = useState(initialAttendance);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [roleFilter, setRoleFilter] = useState("all");
@@ -91,7 +91,7 @@ export function AttendanceTable({ initialAttendance, allStaff }: Props) {
             <Printer className="h-4 w-4 mr-1" />
             Print
           </Button>
-          {canManageStaff && (
+          {permissions.can("EDIT_STAFF") && (
             <Button
               size="sm"
               onClick={() => {
@@ -116,7 +116,7 @@ export function AttendanceTable({ initialAttendance, allStaff }: Props) {
               <TableHead>Check Out</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Notes</TableHead>
-              {canManageStaff && <TableHead className="text-right">Actions</TableHead>}
+              {permissions.can("EDIT_STAFF") && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -145,10 +145,10 @@ export function AttendanceTable({ initialAttendance, allStaff }: Props) {
                     {record.staff?.role ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {record.check_in_time ?? "—"}
+                    {record.check_in ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {record.check_out_time ?? "—"}
+                    {record.check_out ?? "—"}
                   </TableCell>
                   <TableCell>
                     <span
@@ -162,7 +162,7 @@ export function AttendanceTable({ initialAttendance, allStaff }: Props) {
                   <TableCell className="text-sm text-muted-foreground">
                     {record.notes ?? "—"}
                   </TableCell>
-                  {canManageStaff && (
+                  {permissions.can("EDIT_STAFF") && (
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
