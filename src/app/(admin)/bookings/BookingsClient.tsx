@@ -1,356 +1,517 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import {
+  CalendarCheck, Plus, RefreshCw, Search,
+  ChevronRight, X, Check, LogIn, LogOut,
+  Calendar, User, BedDouble, DollarSign
+} from "lucide-react"
 
-const STATUS_LIST = ["pending","confirmed","checked_in","checked_out","cancelled","no_show"] as const
-type BStatus = typeof STATUS_LIST[number]
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n)
 
-const STATUS_CFG: Record<BStatus, { label:string; pill:string; bg:string; border:string; text:string }> = {
-  pending:     { label:"Pending",     pill:"pill-amber",  bg:"rgba(253,203,110,0.12)", border:"rgba(253,203,110,0.25)", text:"#fdcb6e" },
-  confirmed:   { label:"Confirmed",   pill:"pill-blue",   bg:"rgba(116,185,255,0.12)", border:"rgba(116,185,255,0.25)", text:"#74b9ff" },
-  checked_in:  { label:"Checked In",  pill:"pill-green",  bg:"rgba(0,184,148,0.12)",   border:"rgba(0,184,148,0.25)",   text:"#00b894" },
-  checked_out: { label:"Checked Out", pill:"pill-gray",   bg:"rgba(255,255,255,0.06)", border:"rgba(255,255,255,0.12)", text:"rgba(255,255,255,0.4)" },
-  cancelled:   { label:"Cancelled",   pill:"pill-red",    bg:"rgba(225,112,85,0.12)",  border:"rgba(225,112,85,0.25)",  text:"#e17055" },
-  no_show:     { label:"No Show",     pill:"pill-red",    bg:"rgba(225,112,85,0.12)",  border:"rgba(225,112,85,0.25)",  text:"#e17055" },
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+
+const STATUSES = ["all", "pending", "confirmed", "checked_in", "checked_out", "cancelled", "no_show"]
+
+const STATUS_META: Record<string, { label: string; pill: string; color: string }> = {
+  pending:      { label: "Pending",     pill: "pill-amber",  color: "var(--amber)"  },
+  confirmed:    { label: "Confirmed",   pill: "pill-blue",   color: "var(--blue)"   },
+  checked_in:   { label: "Checked In",  pill: "pill-green",  color: "var(--green)"  },
+  checked_out:  { label: "Checked Out", pill: "pill-gray",   color: "rgba(255,255,255,0.35)" },
+  cancelled:    { label: "Cancelled",   pill: "pill-red",    color: "var(--red)"    },
+  no_show:      { label: "No Show",     pill: "pill-red",    color: "var(--red)"    },
 }
 
-const S: React.CSSProperties = { color:"var(--text-muted)" }
-const fmt   = (d:string) => new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short"})
-const fmtFull = (d:string) => new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})
-const nights  = (a:string,b:string) => Math.max(1, Math.ceil((new Date(b).getTime()-new Date(a).getTime())/86400000))
-
-function Modal({ title, onClose, children }: { title:string; onClose:()=>void; children:React.ReactNode }) {
+const avatarColors = [
+  ["#6c5ce7","#a29bfe"],["#00b894","#55efc4"],["#74b9ff","#0984e3"],
+  ["#fdcb6e","#e17055"],["#fd79a8","#e84393"],["#a29bfe","#6c5ce7"],
+]
+function avatarColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return avatarColors[Math.abs(h) % avatarColors.length]
+}
+function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+  const [from, to] = avatarColor(name)
+  const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
   return (
-    <div style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)" }}
-      onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:"#13131f",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:28,width:560,maxWidth:"92vw",maxHeight:"88vh",overflowY:"auto" }}>
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22 }}>
-          <h2 style={{ fontSize:16,fontWeight:600,margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:"none",border:"none",color:"rgba(255,255,255,0.4)",fontSize:22,cursor:"pointer",lineHeight:1,padding:4 }}>×</button>
-        </div>
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "linear-gradient(135deg, " + from + ", " + to + ")",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.36 + "px", fontWeight: 700, color: "#fff",
+      flexShrink: 0, letterSpacing: "0.5px",
+    }}>{initials}</div>
+  )
+}
+
+interface Guest { id: string; name?: string | null; full_name?: string | null; phone?: string | null }
+interface Room  { id: string; room_number: string; status: string; room_type?: { name: string; base_price: number } | null }
+interface Booking {
+  id: string
+  booking_number?: string | null
+  status: string
+  check_in_date: string
+  check_out_date: string
+  total_amount?: number | null
+  notes?: string | null
+  guest?: Guest | null
+  room?: Room | null
+  guest_id?: string | null
+  room_id?: string | null
+}
+
+function Modal({ title, onClose, wide, children }: { title: string; onClose: () => void; wide?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className={"modal-container" + (wide ? " modal-container-lg" : "")} onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>&#215;</button>
+        <div className="modal-title">{title}</div>
         {children}
       </div>
     </div>
   )
 }
 
-function FInput({label,...p}:{label:string}&React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div style={{marginBottom:14}}>
-      <label style={{fontSize:11,fontWeight:600,letterSpacing:"0.6px",textTransform:"uppercase",...S,display:"block",marginBottom:6}}>{label}</label>
-      <input {...p} style={{width:"100%",padding:"10px 12px",fontSize:13,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,color:"var(--text-primary)",outline:"none"}}/>
-    </div>
-  )
-}
-function FSelect({label,children,...p}:{label:string}&React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <div style={{marginBottom:14}}>
-      <label style={{fontSize:11,fontWeight:600,letterSpacing:"0.6px",textTransform:"uppercase",...S,display:"block",marginBottom:6}}>{label}</label>
-      <select {...p} style={{width:"100%",padding:"10px 12px",fontSize:13,background:"rgba(20,20,32,0.95)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,color:"var(--text-primary)",outline:"none"}}>
-        {children}
-      </select>
-    </div>
-  )
+function nightsBetween(a: string, b: string) {
+  const diff = new Date(b).getTime() - new Date(a).getTime()
+  return Math.max(1, Math.round(diff / 86400000))
 }
 
-
-/* ─── BookingPriceSummary ───────────────────── */
-function BookingPriceSummary({ roomId, checkIn, checkOut, allRooms }: {
-  roomId: string; checkIn: string; checkOut: string; allRooms: any[]
-}) {
-  if (!roomId || !checkIn || !checkOut || checkOut <= checkIn) return null
-  const room = allRooms.find(r => r.id === roomId)
-  const rt   = room?.room_type_id as any
-  if (!rt) return null
-  const n     = Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000))
-  const total = rt.base_price * n
-  const S2: React.CSSProperties = { color: "var(--text-muted)" }
-  return (
-    <div style={{ padding:"12px 14px",borderRadius:10,background:"rgba(108,92,231,0.08)",border:"1px solid rgba(108,92,231,0.2)",marginBottom:14 }}>
-      <div style={{ fontSize:12,color:"#a29bfe",fontWeight:500 }}>{n} night{n!==1?"s":""} · {rt.name}</div>
-      <div style={{ fontSize:18,fontWeight:600,color:"var(--text-primary)",marginTop:2 }}>
-        {new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(total)}
-      </div>
-      <div style={{ fontSize:11,...S2,marginTop:2 }}>
-        +{new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Math.round(total*0.12))} GST (12%)
-      </div>
-    </div>
-  )
-}
-
-/* ─── ViewBookingModal ──────────────────────── */
-function ViewBookingModal({ booking: b, onClose, onUpdateStatus }: {
-  booking: any; onClose: ()=>void; onUpdateStatus: (id:string, s:BStatus)=>void
-}) {
-  const cfg = STATUS_CFG[b.status as BStatus] || STATUS_CFG.pending
-  const n   = Math.max(1, Math.ceil((new Date(b.check_out_date).getTime() - new Date(b.check_in_date).getTime()) / 86400000))
-  const rt  = b.room?.room_type_id as any
-  const S2: React.CSSProperties = { color: "var(--text-muted)" }
-  const fmtD = (d: string) => new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})
-  return (
-    <Modal title={"Booking " + b.booking_number} onClose={onClose}>
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderRadius:12,background:cfg.bg,border:"1px solid "+cfg.border,marginBottom:20 }}>
-        <span style={{ fontFamily:"DM Mono,monospace",fontSize:14,fontWeight:600,color:cfg.text }}>{b.booking_number}</span>
-        <span className={"pill "+cfg.pill}>{cfg.label}</span>
-      </div>
-      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16 }}>
-        {([
-          ["Guest",     b.guest?.full_name||"—"],
-          ["Phone",     b.guest?.phone||"—"],
-          ["Room",      "Room "+(b.room?.room_number||"—")+(rt?" · "+rt.name:"")],
-          ["Nights",    n+" night"+(n!==1?"s":"")],
-          ["Check-in",  fmtD(b.check_in_date)],
-          ["Check-out", fmtD(b.check_out_date)],
-          ["Adults",    String(b.adults||1)],
-          ["Amount",    b.total_amount ? new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(b.total_amount) : "—"],
-        ] as [string,string][]).map(([label,val])=>(
-          <div key={label} style={{ padding:"10px 12px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ fontSize:10,fontWeight:600,letterSpacing:"0.6px",textTransform:"uppercase",...S2,marginBottom:4 }}>{label}</div>
-            <div style={{ fontSize:13,color:"var(--text-primary)" }}>{val}</div>
-          </div>
-        ))}
-      </div>
-      {b.notes && <div style={{ padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",marginBottom:16,fontSize:13,...S2 }}>{b.notes}</div>}
-      <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
-        {b.status==="pending"    && <button onClick={()=>onUpdateStatus(b.id,"confirmed")}    style={{ flex:1,padding:"9px 0",borderRadius:10,border:"none",background:"#74b9ff",color:"#fff",fontWeight:500,cursor:"pointer",fontSize:13 }}>Confirm</button>}
-        {b.status==="confirmed"  && <button onClick={()=>onUpdateStatus(b.id,"checked_in")}  style={{ flex:1,padding:"9px 0",borderRadius:10,border:"none",background:"#00b894",color:"#fff",fontWeight:500,cursor:"pointer",fontSize:13 }}>Check In</button>}
-        {b.status==="checked_in" && <button onClick={()=>onUpdateStatus(b.id,"checked_out")} style={{ flex:1,padding:"9px 0",borderRadius:10,border:"none",background:"#74b9ff",color:"#fff",fontWeight:500,cursor:"pointer",fontSize:13 }}>Check Out</button>}
-        {(b.status==="pending"||b.status==="confirmed") && <button onClick={()=>onUpdateStatus(b.id,"cancelled")} style={{ flex:1,padding:"9px 0",borderRadius:10,border:"1px solid rgba(225,112,85,0.3)",background:"rgba(225,112,85,0.1)",color:"#e17055",fontWeight:500,cursor:"pointer",fontSize:13 }}>Cancel</button>}
-      </div>
-    </Modal>
-  )
-}
-
-export function BookingsClient({ bookings: init, guests, rooms: allRooms, hotelId }: {
-  bookings: any[]; guests: any[]; rooms: any[]; hotelId: string
-}) {
+export default function BookingsClient() {
   const supabase = createClient()
-  const [bookings, setBookings] = useState<any[]>(init)
-  const [filter,   setFilter]   = useState<BStatus|"all">("all")
-  const [search,   setSearch]   = useState("")
-  const [modal,    setModal]    = useState<"add"|"view"|null>(null)
-  const [viewing,  setViewing]  = useState<any|null>(null)
+  const db = supabase as any
 
-  /* New booking form */
-  const today = new Date().toISOString().split("T")[0]
-  const [guestId,   setGuestId]   = useState("")
-  const [roomId,    setRoomId]    = useState("")
-  const [checkIn,   setCheckIn]   = useState(today)
-  const [checkOut,  setCheckOut]  = useState(today)
-  const [adults,    setAdults]    = useState("1")
-  const [children_, setChildren]  = useState("0")
-  const [notes,     setNotes]     = useState("")
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [guests, setGuests] = useState<Guest[]>([])
+  const [availRooms, setAvailRooms] = useState<Room[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState("all")
+  const [search, setSearch] = useState("")
+  const [showNew, setShowNew] = useState(false)
+  const [viewBooking, setViewBooking] = useState<Booking | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  /* Filtered rooms (available only for new booking) */
-  const availRooms = allRooms.filter(r=>r.status==="available")
-
-  /* Stats */
-  const stats = STATUS_LIST.reduce((a,s)=>({...a,[s]:bookings.filter(b=>b.status===s).length}),{} as Record<string,number>)
-
-  /* Filtered list */
-  const filtered = bookings.filter(b => {
-    const matchStatus = filter==="all" || b.status===filter
-    const name   = b.guest?.full_name?.toLowerCase()||""
-    const phone  = b.guest?.phone||""
-    const num    = b.booking_number||""
-    const matchQ = !search || name.includes(search.toLowerCase()) || phone.includes(search) || num.includes(search)
-    return matchStatus && matchQ
+  const [form, setForm] = useState({
+    guest_id: "", room_id: "", check_in_date: "", check_out_date: "", notes: "",
   })
 
-  /* Create booking */
-  const handleCreate = async () => {
-    if (!guestId||!roomId||!checkIn||!checkOut) { toast.error("Fill all required fields"); return }
-    if (checkOut <= checkIn) { toast.error("Check-out must be after check-in"); return }
-    const room = allRooms.find(r=>r.id===roomId)
-    const rt   = room?.room_type_id
-    const n    = nights(checkIn, checkOut)
-    const total = rt ? rt.base_price * n : 0
-    const bn    = "BK" + Date.now().toString().slice(-8)
+  useEffect(() => { fetchAll() }, [])
 
-    const { data: booking, error: bErr } = await supabase.from("bookings").insert({
-      hotel_id: hotelId, guest_id: guestId, room_id: roomId,
-      booking_number: bn, status: "confirmed",
-      check_in_date: checkIn, check_out_date: checkOut,
-      adults: parseInt(adults), children: parseInt(children_),
-      notes: notes||null, total_amount: total,
-    } as any).select("*, guest:guests(id,full_name,phone), room:rooms(id,room_number,room_type_id:room_type_ids(name,base_price))").single()
-
-    if (bErr) { toast.error(bErr.message); return }
-
-    // Create invoice
-    if (total > 0) {
-      await supabase.from("invoices").insert({
-        hotel_id: hotelId, booking_id: booking.id, guest_id: guestId,
-        total_amount: total, tax_amount: Math.round(total*0.12),
-        discount_amount: 0, payment_status: "pending",
-        invoice_number: "INV" + Date.now().toString().slice(-8),
-      } as any)
-    }
-
-    setBookings(prev => [booking, ...prev])
-    toast.success(`Booking ${bn} created`)
-    setModal(null); setGuestId(""); setRoomId(""); setNotes("")
+  async function fetchAll() {
+    setLoading(true)
+    try {
+      const { data: b } = await db
+        .from("bookings")
+        .select("id, booking_number, status, check_in_date, check_out_date, total_amount, notes, guest_id, room_id, guest:guests(id, name, full_name, phone), room:rooms(id, room_number, status, room_type:room_types(name, base_price))")
+        .order("created_at", { ascending: false })
+      setBookings((b as Booking[]) || [])
+    } catch { toast.error("Failed to load bookings") }
+    finally { setLoading(false) }
   }
 
-  /* Update status */
-  const updateStatus = async (id:string, status: BStatus) => {
-    const { error } = await supabase.from("bookings").update({ status }).eq("id", id)
-    if (error) { toast.error(error.message); return }
-
-    // If checking in → mark room occupied
-    if (status === "checked_in") {
-      const bk = bookings.find(b=>b.id===id)
-      if (bk?.room?.id) await supabase.from("rooms").update({ status:"occupied" }).eq("id", bk.room.id)
-    }
-    // If checking out → mark room cleaning
-    if (status === "checked_out") {
-      const bk = bookings.find(b=>b.id===id)
-      if (bk?.room?.id) await supabase.from("rooms").update({ status:"cleaning" }).eq("id", bk.room.id)
-    }
-
-    setBookings(prev => prev.map(b => b.id===id ? {...b, status} : b))
-    if (viewing?.id===id) setViewing((p:any) => ({...p, status}))
-    toast.success(`Booking status → ${status.replace("_"," ")}`)
+  async function fetchFormData() {
+    const [{ data: g }, { data: r }] = await Promise.all([
+      db.from("guests").select("id, name, full_name, phone").order("name"),
+      db.from("rooms").select("id, room_number, status, room_type:room_types(name, base_price)").eq("status", "available"),
+    ])
+    setGuests((g as Guest[]) || [])
+    setAvailRooms((r as Room[]) || [])
   }
+
+  async function updateStatus(booking: Booking, newStatus: string) {
+    const { error } = await db.from("bookings").update({ status: newStatus }).eq("id", booking.id)
+    if (error) { toast.error("Failed to update booking") }
+    else {
+      toast.success("Booking " + (booking.booking_number || "") + " → " + newStatus.replace("_", " "))
+      setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, status: newStatus } : b))
+      if (viewBooking?.id === booking.id) setViewBooking({ ...viewBooking, status: newStatus })
+    }
+  }
+
+  async function saveBooking() {
+    if (!form.guest_id)      { toast.error("Select a guest"); return }
+    if (!form.room_id)       { toast.error("Select a room"); return }
+    if (!form.check_in_date) { toast.error("Enter check-in date"); return }
+    if (!form.check_out_date){ toast.error("Enter check-out date"); return }
+    if (form.check_out_date <= form.check_in_date) { toast.error("Check-out must be after check-in"); return }
+    setSaving(true)
+    try {
+      const room = availRooms.find((r) => r.id === form.room_id)
+      const nights = nightsBetween(form.check_in_date, form.check_out_date)
+      const rate = room?.room_type?.base_price || 0
+      const total = nights * rate
+      const { error } = await db.from("bookings").insert({
+        guest_id: form.guest_id,
+        room_id: form.room_id,
+        check_in_date: form.check_in_date,
+        check_out_date: form.check_out_date,
+        status: "pending",
+        total_amount: total,
+        notes: form.notes || null,
+      })
+      if (error) throw error
+      toast.success("Booking created")
+      setShowNew(false)
+      setForm({ guest_id: "", room_id: "", check_in_date: "", check_out_date: "", notes: "" })
+      fetchAll()
+    } catch { toast.error("Failed to create booking") }
+    finally { setSaving(false) }
+  }
+
+  const counts = STATUSES.reduce((acc, s) => {
+    acc[s] = s === "all" ? bookings.length : bookings.filter((b) => b.status === s).length
+    return acc
+  }, {} as Record<string, number>)
+
+  const filtered = bookings.filter((b) => {
+    if (filter !== "all" && b.status !== filter) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const guestName = (b.guest?.name || b.guest?.full_name || "").toLowerCase()
+      const phone = (b.guest?.phone || "").toLowerCase()
+      const num = (b.booking_number || "").toLowerCase()
+      if (!guestName.includes(q) && !phone.includes(q) && !num.includes(q)) return false
+    }
+    return true
+  })
+
+  const selectedRoom = availRooms.find((r) => r.id === form.room_id)
+  const previewNights = form.check_in_date && form.check_out_date && form.check_out_date > form.check_in_date
+    ? nightsBetween(form.check_in_date, form.check_out_date) : 0
+  const previewTotal = previewNights * (selectedRoom?.room_type?.base_price || 0)
+
+  const guestDisplayName = (g: Guest | null | undefined) => g?.name || g?.full_name || "Unknown"
+
+  if (loading) return (
+    <div style={{ padding: "28px" }}>
+      <div className="skeleton" style={{ height: "48px", borderRadius: "12px", marginBottom: "16px" }} />
+      <div className="skeleton" style={{ height: "400px", borderRadius: "16px" }} />
+    </div>
+  )
 
   return (
-    <div>
+    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+
       {/* Header */}
-      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h1 style={{ fontSize:22,fontWeight:600,letterSpacing:-0.5,margin:0 }}>Bookings</h1>
-          <p style={{ fontSize:13,marginTop:3,...S }}>{bookings.length} total · {stats.checked_in||0} in-house · {stats.confirmed||0} confirmed</p>
+          <h1 className="page-title">Bookings</h1>
+          <p className="page-sub">{bookings.length} total &middot; {counts.checked_in || 0} active</p>
         </div>
-        <button onClick={()=>setModal("add")} style={{ fontSize:12,padding:"7px 16px",borderRadius:10,border:"none",background:"#6c5ce7",color:"#fff",fontWeight:500,cursor:"pointer" }}>
-          + New Booking
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button className="btn btn-secondary btn-sm" onClick={fetchAll}><RefreshCw size={13} /> Refresh</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { fetchFormData(); setShowNew(true) }}>
+            <Plus size={13} /> New Booking
+          </button>
+        </div>
       </div>
 
-      {/* Status filter pills */}
-      <div style={{ display:"flex",gap:8,marginBottom:20,flexWrap:"wrap" }}>
-        {([["all","All",bookings.length], ...STATUS_LIST.map(s=>[s,STATUS_CFG[s].label,stats[s]||0])] as [string,string,number][]).map(([val,label,count])=>(
-          <button key={val} onClick={()=>setFilter(val as any)}
-            style={{
-              fontSize:12,fontWeight:500,padding:"6px 14px",borderRadius:99,cursor:"pointer",transition:"all 0.15s",border:"1px solid",
-              borderColor: filter===val ? (val==="all"?"rgba(108,92,231,0.5)": STATUS_CFG[val as BStatus]?.border||"rgba(108,92,231,0.5)") : "rgba(255,255,255,0.08)",
-              background:  filter===val ? (val==="all"?"rgba(108,92,231,0.15)": STATUS_CFG[val as BStatus]?.bg||"rgba(108,92,231,0.15)") : "transparent",
-              color:       filter===val ? (val==="all"?"#a29bfe": STATUS_CFG[val as BStatus]?.text||"#a29bfe") : "rgba(255,255,255,0.45)",
-            }}>
-            {label} <span style={{ opacity:0.7, marginLeft:4 }}>{count}</span>
-          </button>
-        ))}
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <div className="filter-tabs" style={{ flex: 1, minWidth: 0 }}>
+          {STATUSES.map((s) => (
+            <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}>
+              {s === "all" ? "All" : STATUS_META[s]?.label || s}
+              <span className="tab-count">{counts[s] || 0}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Search */}
-      <div style={{ position:"relative",marginBottom:16,maxWidth:400 }}>
-        <svg style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:0.4 }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input placeholder="Search guest, phone, or booking #..." value={search} onChange={e=>setSearch(e.target.value)}
-          style={{ width:"100%",padding:"9px 12px 9px 34px",fontSize:13,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,color:"var(--text-primary)",outline:"none" }}/>
+      <div className="search-wrap" style={{ marginBottom: "20px", maxWidth: "360px" }}>
+        <Search size={15} className="search-icon" />
+        <input
+          className="search-input"
+          placeholder="Search by guest, phone or booking #..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button onClick={() => setSearch("")} style={{
+            position: "absolute", right: "10px", background: "none", border: "none",
+            color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center",
+          }}><X size={13} /></button>
+        )}
       </div>
+
+      {/* Empty */}
+      {filtered.length === 0 && (
+        <div className="card-surface">
+          <div className="empty-state">
+            <CalendarCheck size={40} style={{ color: "var(--text-muted)", marginBottom: "16px" }} />
+            <div className="empty-state-title">No bookings found</div>
+            <div className="empty-state-sub">
+              {search ? "No bookings match your search" : filter !== "all" ? "No bookings with this status" : "Create your first booking to get started"}
+            </div>
+            {!search && filter === "all" && (
+              <button className="btn btn-primary btn-sm" style={{ marginTop: "20px" }}
+                onClick={() => { fetchFormData(); setShowNew(true) }}>
+                <Plus size={13} /> New Booking
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Table */}
-      <div className="card-surface" style={{ overflow:"hidden" }}>
-        <table className="data-table">
-          <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Nights</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {filtered.map(b => {
-              const cfg = STATUS_CFG[b.status as BStatus] || STATUS_CFG.pending
-              const n   = nights(b.check_in_date, b.check_out_date)
-              const rt  = (b.room as any)?.room_type_id
-              return (
-                <tr key={b.id} style={{ cursor:"pointer" }} onClick={()=>{ setViewing(b); setModal("view") }}>
-                  <td><span style={{ fontFamily:"DM Mono,monospace",fontSize:12,background:"rgba(108,92,231,0.1)",padding:"2px 8px",borderRadius:6,color:"#a29bfe" }}>{b.booking_number}</span></td>
-                  <td>
-                    <div style={{ fontWeight:500,color:"var(--text-primary)",fontSize:13 }}>{b.guest?.full_name||"—"}</div>
-                    <div style={{ fontSize:11,...S }}>{b.guest?.phone||""}</div>
-                  </td>
-                  <td><span style={{ fontFamily:"DM Mono,monospace",fontSize:12,background:"rgba(255,255,255,0.06)",padding:"2px 8px",borderRadius:6 }}>{b.room?.room_number||"—"}</span>
-                    {rt && <div style={{ fontSize:10,...S,marginTop:2 }}>{rt.name}</div>}
-                  </td>
-                  <td style={{ fontSize:12 }}>{fmt(b.check_in_date)}</td>
-                  <td style={{ fontSize:12 }}>{fmt(b.check_out_date)}</td>
-                  <td style={{ fontFamily:"DM Mono,monospace",fontSize:12 }}>{n}N</td>
-                  <td style={{ fontFamily:"DM Mono,monospace",fontSize:12,color:"var(--text-primary)" }}>
-                    {b.total_amount ? new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(b.total_amount) : "—"}
-                  </td>
-                  <td><span className={"pill "+cfg.pill}>{cfg.label}</span></td>
-                  <td onClick={e=>e.stopPropagation()}>
-                    <div style={{ display:"flex",gap:5 }}>
-                      {b.status==="confirmed" && (
-                        <button onClick={()=>updateStatus(b.id,"checked_in")}
-                          style={{ fontSize:11,padding:"4px 10px",borderRadius:7,border:"1px solid rgba(0,184,148,0.3)",background:"rgba(0,184,148,0.1)",color:"#00b894",cursor:"pointer" }}>
-                          Check In
-                        </button>
-                      )}
-                      {b.status==="checked_in" && (
-                        <button onClick={()=>updateStatus(b.id,"checked_out")}
-                          style={{ fontSize:11,padding:"4px 10px",borderRadius:7,border:"1px solid rgba(116,185,255,0.3)",background:"rgba(116,185,255,0.1)",color:"#74b9ff",cursor:"pointer" }}>
-                          Check Out
-                        </button>
-                      )}
-                      {b.status==="pending" && (
-                        <button onClick={()=>updateStatus(b.id,"confirmed")}
-                          style={{ fontSize:11,padding:"4px 10px",borderRadius:7,border:"1px solid rgba(253,203,110,0.3)",background:"rgba(253,203,110,0.1)",color:"#fdcb6e",cursor:"pointer" }}>
-                          Confirm
-                        </button>
-                      )}
-                    </div>
-                  </td>
+      {filtered.length > 0 && (
+        <div className="card-surface" style={{ overflow: "hidden" }}>
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Booking #</th>
+                  <th>Guest</th>
+                  <th>Room</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Nights</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              )
-            })}
-            {filtered.length===0 && (
-              <tr><td colSpan={9}>
-                <div className="empty-state">
-                  <div style={{ fontSize:32,marginBottom:8 }}>📋</div>
-                  <div>{bookings.length===0?"No bookings yet — create the first one":"No bookings match this filter"}</div>
-                </div>
-              </td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── ADD BOOKING MODAL ── */}
-      {modal==="add" && (
-        <Modal title="New Booking" onClose={()=>setModal(null)}>
-          <FSelect label="Guest *" value={guestId} onChange={e=>setGuestId(e.target.value)}>
-            <option value="">Select guest...</option>
-            {guests.map(g=><option key={g.id} value={g.id}>{g.full_name} · {g.phone}</option>)}
-          </FSelect>
-          <FSelect label="Room *" value={roomId} onChange={e=>setRoomId(e.target.value)}>
-            <option value="">Select available room...</option>
-            {availRooms.map(r=>{
-              const rt = r.room_type_id as any
-              return <option key={r.id} value={r.id}>Room {r.room_number}{rt?` — ${rt.name} · ₹${rt.base_price}/night`:""}</option>
-            })}
-          </FSelect>
-          {availRooms.length===0 && <div style={{ fontSize:12,color:"#fdcb6e",marginBottom:14,padding:"8px 12px",borderRadius:8,background:"rgba(253,203,110,0.08)",border:"1px solid rgba(253,203,110,0.2)" }}>No available rooms. Mark a room as available first.</div>}
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 14px" }}>
-            <FInput label="Check-in Date *" type="date" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/>
-            <FInput label="Check-out Date *" type="date" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/>
-            <FInput label="Adults" type="number" min="1" value={adults} onChange={e=>setAdults(e.target.value)}/>
-            <FInput label="Children" type="number" min="0" value={children_} onChange={e=>setChildren(e.target.value)}/>
+              </thead>
+              <tbody>
+                {filtered.map((b) => {
+                  const meta = STATUS_META[b.status] || STATUS_META.pending
+                  const nights = nightsBetween(b.check_in_date, b.check_out_date)
+                  const gName = guestDisplayName(b.guest)
+                  return (
+                    <tr key={b.id} style={{ cursor: "pointer" }}
+                      onClick={() => setViewBooking(b)}>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", fontWeight: 600, color: "var(--accent-light)" }}>
+                          {b.booking_number || b.id.slice(0, 8).toUpperCase()}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <Avatar name={gName} size={30} />
+                          <div>
+                            <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>{gName}</div>
+                            {b.guest?.phone && (
+                              <div style={{ fontSize: "11px", fontFamily: '"DM Mono", monospace', color: "var(--text-muted)" }}>{b.guest.phone}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', fontWeight: 600, color: "var(--text-primary)" }}>
+                          {b.room?.room_number || "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-secondary)" }}>
+                          {fmtDate(b.check_in_date)}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-secondary)" }}>
+                          {fmtDate(b.check_out_date)}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', color: "var(--text-secondary)" }}>{nights}</span>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', fontWeight: 500, color: "var(--text-primary)" }}>
+                          {fmt(b.total_amount || 0)}
+                        </span>
+                      </td>
+                      <td><span className={"pill " + meta.pill}>{meta.label}</span></td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: "flex", gap: "5px" }}>
+                          {b.status === "pending" && (
+                            <button className="btn btn-secondary btn-sm" style={{ fontSize: "11px", padding: "4px 10px" }}
+                              onClick={() => updateStatus(b, "confirmed")}>
+                              <Check size={11} /> Confirm
+                            </button>
+                          )}
+                          {b.status === "confirmed" && (
+                            <button className="btn btn-secondary btn-sm" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--green)", borderColor: "var(--green-border)" }}
+                              onClick={() => updateStatus(b, "checked_in")}>
+                              <LogIn size={11} /> Check In
+                            </button>
+                          )}
+                          {b.status === "checked_in" && (
+                            <button className="btn btn-secondary btn-sm" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--amber)", borderColor: "var(--amber-border)" }}
+                              onClick={() => updateStatus(b, "checked_out")}>
+                              <LogOut size={11} /> Check Out
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-          <BookingPriceSummary roomId={roomId} checkIn={checkIn} checkOut={checkOut} allRooms={allRooms}/>
-          <FInput label="Notes (optional)" placeholder="Special requests, early check-in..." value={notes} onChange={e=>setNotes(e.target.value)}/>
-          <div style={{ display:"flex",gap:10,marginTop:6 }}>
-            <button onClick={()=>setModal(null)} style={{ flex:1,padding:"10px 0",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.6)",cursor:"pointer",fontSize:13 }}>Cancel</button>
-            <button onClick={handleCreate} style={{ flex:1,padding:"10px 0",borderRadius:10,border:"none",background:"#6c5ce7",color:"#fff",fontWeight:500,cursor:"pointer",fontSize:13 }}>Create Booking</button>
+        </div>
+      )}
+
+      {/* View Booking Modal */}
+      {viewBooking && (
+        <Modal title="Booking Details" wide onClose={() => setViewBooking(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+            {/* Top row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <Avatar name={guestDisplayName(viewBooking.guest)} size={44} />
+                <div>
+                  <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {guestDisplayName(viewBooking.guest)}
+                  </div>
+                  {viewBooking.guest?.phone && (
+                    <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-muted)" }}>
+                      {viewBooking.guest.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <span className={"pill " + (STATUS_META[viewBooking.status]?.pill || "pill-gray")} style={{ fontSize: "12px", padding: "4px 14px" }}>
+                {STATUS_META[viewBooking.status]?.label || viewBooking.status}
+              </span>
+            </div>
+
+            <div style={{ height: "1px", background: "var(--border)" }} />
+
+            {/* Detail grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              {[
+                { icon: BedDouble,  label: "Room",       value: viewBooking.room?.room_number || "—" },
+                { icon: DollarSign, label: "Total",      value: fmt(viewBooking.total_amount || 0) },
+                { icon: Calendar,   label: "Check In",   value: fmtDate(viewBooking.check_in_date) },
+                { icon: Calendar,   label: "Check Out",  value: fmtDate(viewBooking.check_out_date) },
+              ].map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "12px", padding: "14px 16px", border: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <Icon size={14} style={{ color: "var(--text-muted)" }} />
+                      <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>
+                      {item.value}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {viewBooking.notes && (
+              <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "12px", padding: "14px 16px", border: "1px solid var(--border)" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>Notes</div>
+                <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{viewBooking.notes}</div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {viewBooking.status === "pending" && (
+                <button className="btn btn-primary btn-sm" onClick={() => updateStatus(viewBooking, "confirmed")}>
+                  <Check size={13} /> Confirm Booking
+                </button>
+              )}
+              {viewBooking.status === "confirmed" && (
+                <button className="btn btn-primary btn-sm" style={{ background: "var(--green)", boxShadow: "0 2px 8px rgba(0,184,148,0.25)" }}
+                  onClick={() => updateStatus(viewBooking, "checked_in")}>
+                  <LogIn size={13} /> Check In
+                </button>
+              )}
+              {viewBooking.status === "checked_in" && (
+                <button className="btn btn-secondary btn-sm" style={{ color: "var(--amber)", borderColor: "var(--amber-border)" }}
+                  onClick={() => updateStatus(viewBooking, "checked_out")}>
+                  <LogOut size={13} /> Check Out
+                </button>
+              )}
+              {(viewBooking.status === "pending" || viewBooking.status === "confirmed") && (
+                <button className="btn btn-danger btn-sm" onClick={() => updateStatus(viewBooking, "cancelled")}>
+                  <X size={13} /> Cancel
+                </button>
+              )}
+            </div>
           </div>
         </Modal>
       )}
 
-      {/* ── VIEW BOOKING MODAL ── */}
-      {modal==="view" && viewing && (
-        <ViewBookingModal
-          booking={viewing}
-          onClose={()=>{ setModal(null); setViewing(null) }}
-          onUpdateStatus={updateStatus}
-        />
+      {/* New Booking Modal */}
+      {showNew && (
+        <Modal title="New Booking" wide onClose={() => setShowNew(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div className="form-group">
+              <label className="form-label">Guest *</label>
+              <select className="form-select" value={form.guest_id}
+                onChange={(e) => setForm((p) => ({ ...p, guest_id: e.target.value }))}>
+                <option value="">Select guest...</option>
+                {guests.map((g) => (
+                  <option key={g.id} value={g.id}>{guestDisplayName(g)}{g.phone ? " · " + g.phone : ""}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Room *</label>
+              <select className="form-select" value={form.room_id}
+                onChange={(e) => setForm((p) => ({ ...p, room_id: e.target.value }))}>
+                <option value="">Select available room...</option>
+                {availRooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {"Room " + r.room_number + (r.room_type ? " · " + r.room_type.name + " · " + fmt(r.room_type.base_price) + "/night" : "")}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div className="form-group">
+                <label className="form-label">Check In Date *</label>
+                <input className="form-input" type="date" value={form.check_in_date}
+                  onChange={(e) => setForm((p) => ({ ...p, check_in_date: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Check Out Date *</label>
+                <input className="form-input" type="date" value={form.check_out_date}
+                  onChange={(e) => setForm((p) => ({ ...p, check_out_date: e.target.value }))} />
+              </div>
+            </div>
+
+            {/* Price Preview */}
+            {previewNights > 0 && (
+              <div style={{ background: "var(--accent-glow)", border: "1px solid var(--border-active)", borderRadius: "12px", padding: "14px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                    {previewNights} night{previewNights > 1 ? "s" : ""} &times; {fmt(selectedRoom?.room_type?.base_price || 0)}
+                  </span>
+                  <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "16px", fontWeight: 600, color: "var(--accent-light)" }}>
+                    {fmt(previewTotal)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Notes</label>
+              <textarea className="form-textarea" placeholder="Special requests, preferences..."
+                value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setShowNew(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveBooking} disabled={saving}>
+              {saving ? "Creating..." : "Create Booking"}
+            </button>
+          </div>
+        </Modal>
       )}
+
     </div>
   )
 }

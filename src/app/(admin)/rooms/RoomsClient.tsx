@@ -1,335 +1,462 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import {
+  BedDouble, Plus, Grid3X3, List,
+  Edit2, RefreshCw
+} from "lucide-react"
 
-/* ─── Types ─────────────────────────────── */
-interface RoomType { id: string; name: string; base_price: number; max_occupancy: number; description?: string | null }
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n)
+
+const STATUS_LIST = ["all", "available", "occupied", "maintenance", "cleaning", "reserved", "blocked"]
+
+const STATUS_META: Record<string, { label: string; pill: string; color: string; bg: string }> = {
+  available:   { label: "Available",   pill: "pill-green",  color: "var(--green)",  bg: "var(--green-bg)"  },
+  occupied:    { label: "Occupied",    pill: "pill-purple", color: "var(--purple)", bg: "var(--purple-bg)" },
+  maintenance: { label: "Maintenance", pill: "pill-red",    color: "var(--red)",    bg: "var(--red-bg)"    },
+  cleaning:    { label: "Cleaning",    pill: "pill-amber",  color: "var(--amber)",  bg: "var(--amber-bg)"  },
+  reserved:    { label: "Reserved",    pill: "pill-blue",   color: "var(--blue)",   bg: "var(--blue-bg)"   },
+  blocked:     { label: "Blocked",     pill: "pill-gray",   color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.07)" },
+}
+
+const NEXT_STATUS: Record<string, string> = {
+  available:   "occupied",
+  occupied:    "cleaning",
+  cleaning:    "available",
+  maintenance: "available",
+  reserved:    "available",
+  blocked:     "available",
+}
+
+interface RoomType {
+  id: string
+  name: string
+  base_price: number
+  capacity: number
+}
+
 interface Room {
-  id: string; room_number: string; floor?: number | null
-  status: "available"|"occupied"|"cleaning"|"maintenance"|"blocked"
-  room_type_id: RoomType | null
+  id: string
+  room_number: string
+  floor?: number | null
+  status: string
+  room_type_id?: string | null
+  notes?: string | null
+  room_type?: RoomType | null
 }
-interface Props { rooms: Room[]; roomTypes: RoomType[]; hotelId: string }
 
-/* ─── Status config ─────────────────────── */
-const STATUS_CFG = {
-  available:   { bg:"rgba(0,184,148,0.15)",   border:"rgba(0,184,148,0.3)",   text:"#00b894", label:"Available" },
-  occupied:    { bg:"rgba(108,92,231,0.2)",    border:"rgba(108,92,231,0.4)",  text:"#a29bfe", label:"Occupied" },
-  cleaning:    { bg:"rgba(253,203,110,0.15)",  border:"rgba(253,203,110,0.3)", text:"#fdcb6e", label:"Cleaning" },
-  maintenance: { bg:"rgba(225,112,85,0.15)",   border:"rgba(225,112,85,0.3)",  text:"#e17055", label:"Maintenance" },
-  blocked:     { bg:"rgba(255,255,255,0.06)",  border:"rgba(255,255,255,0.1)", text:"rgba(255,255,255,0.35)", label:"Blocked" },
-} as const
-
-const STATUSES = ["available","occupied","cleaning","maintenance","blocked"] as const
-
-/* ─── Helpers ───────────────────────────── */
-const S: React.CSSProperties = { color:"var(--text-muted)" }
-const fmt = (n: number) => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n)
-
-/* ─── Modal shell ───────────────────────── */
-function Modal({ title, onClose, children }: { title:string; onClose:()=>void; children:React.ReactNode }) {
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",backdropFilter:"blur(4px)" }}
-      onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:"#13131f",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:28,width:480,maxWidth:"90vw",maxHeight:"85vh",overflowY:"auto" }}>
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22 }}>
-          <h2 style={{ fontSize:16,fontWeight:600,margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:"none",border:"none",color:"rgba(255,255,255,0.4)",fontSize:20,cursor:"pointer",lineHeight:1,padding:4 }}>×</button>
-        </div>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        <div className="modal-title">{title}</div>
         {children}
       </div>
     </div>
   )
 }
 
-/* ─── Input ─────────────────────────────── */
-function FInput({ label, ...p }: { label:string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div style={{ marginBottom:14 }}>
-      <label style={{ fontSize:11,fontWeight:600,letterSpacing:"0.6px",textTransform:"uppercase",...S,display:"block",marginBottom:6 }}>{label}</label>
-      <input {...p} style={{ width:"100%",padding:"10px 12px",fontSize:13,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,color:"var(--text-primary)",outline:"none",...(p.style||{}) }}/>
-    </div>
-  )
-}
-function FSelect({ label, children, ...p }: { label:string } & React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <div style={{ marginBottom:14 }}>
-      <label style={{ fontSize:11,fontWeight:600,letterSpacing:"0.6px",textTransform:"uppercase",...S,display:"block",marginBottom:6 }}>{label}</label>
-      <select {...p} style={{ width:"100%",padding:"10px 12px",fontSize:13,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,color:"var(--text-primary)",outline:"none" }}>
-        {children}
-      </select>
-    </div>
-  )
-}
-
-/* ════════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-═══════════════════════════════════════════════════════════════════ */
-export function RoomsClient({ rooms: initialRooms, roomTypes: initialRoomTypes, hotelId }: Props) {
+export default function RoomsClient() {
   const supabase = createClient()
-  const [rooms,     setRooms]     = useState<Room[]>(initialRooms)
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>(initialRoomTypes)
-  const [filter,    setFilter]    = useState<string>("all")
-  const [view,      setView]      = useState<"grid"|"list">("grid")
-  const [modal,     setModal]     = useState<"addRoom"|"addType"|"editRoom"|null>(null)
-  const [editing,   setEditing]   = useState<Room|null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState("all")
+  const [view, setView] = useState<"grid" | "list">("grid")
+  const [showAddRoom, setShowAddRoom] = useState(false)
+  const [showAddType, setShowAddType] = useState(false)
+  const [editRoom, setEditRoom] = useState<Room | null>(null)
+  const [roomForm, setRoomForm] = useState({ room_number: "", floor: "", room_type_id: "", status: "available", notes: "" })
+  const [typeForm, setTypeForm] = useState({ name: "", base_price: "", capacity: "" })
+  const [saving, setSaving] = useState(false)
 
-  /* ── Add Room Type ── */
-  const [typeName,  setTypeName]  = useState("")
-  const [typePrice, setTypePrice] = useState("")
-  const [typeOcc,   setTypeOcc]   = useState("2")
-  const [typeDesc,  setTypeDesc]  = useState("")
+  useEffect(() => { fetchAll() }, [])
 
-  const handleAddType = async () => {
-    if (!typeName || !typePrice) { toast.error("Name and price required"); return }
-    const { data, error } = await supabase.from("room_type_ids").insert({
-      hotel_id: hotelId, name: typeName,
-      base_price: parseFloat(typePrice),
-      max_occupancy: parseInt(typeOcc),
-      description: typeDesc || null,
-    }).select().single()
-    if (error) { toast.error(error.message); return }
-    setRoomTypes(prev => [...prev, data as RoomType])
-    toast.success(`Room type "${typeName}" added`)
-    setTypeName(""); setTypePrice(""); setTypeOcc("2"); setTypeDesc("")
-    setModal(null)
-  }
-
-  /* ── Add / Edit Room ── */
-  const [roomNum,    setRoomNum]    = useState("")
-  const [roomFloor,  setRoomFloor]  = useState("1")
-  const [roomTypeId, setRoomTypeId] = useState("")
-  const [roomStatus, setRoomStatus] = useState<typeof STATUSES[number]>("available")
-
-  const openAddRoom = () => {
-    setRoomNum(""); setRoomFloor("1"); setRoomTypeId(roomTypes[0]?.id||""); setRoomStatus("available")
-    setEditing(null); setModal("addRoom")
-  }
-  const openEditRoom = (r: Room) => {
-    setRoomNum(r.room_number); setRoomFloor(String(r.floor||1))
-    setRoomTypeId((r.room_type_id as any)?.id || ""); setRoomStatus(r.status)
-    setEditing(r); setModal("addRoom")
-  }
-
-  const handleSaveRoom = async () => {
-    if (!roomNum) { toast.error("Room number required"); return }
-    const payload: any = {
-      hotel_id: hotelId, room_number: roomNum,
-      floor: parseInt(roomFloor), status: roomStatus,
-      room_type_id: roomTypeId || null,
+  async function fetchAll() {
+    setLoading(true)
+    try {
+      const db = supabase as any
+      const { data: r } = await db
+        .from("rooms")
+        .select("id, room_number, floor, status, room_type_id, notes, room_type:room_types(id, name, base_price, capacity)")
+        .order("room_number", { ascending: true })
+      const { data: t } = await db
+        .from("room_types")
+        .select("id, name, base_price, capacity")
+        .order("name", { ascending: true })
+      setRooms((r as Room[]) || [])
+      setRoomTypes((t as RoomType[]) || [])
+    } catch {
+      toast.error("Failed to load rooms")
+    } finally {
+      setLoading(false)
     }
-    if (editing) {
-      const { error } = await supabase.from("rooms").update(payload).eq("id", editing.id)
-      if (error) { toast.error(error.message); return }
-      const { data } = await supabase.from("rooms").select("*, room_type_id:room_type_ids(id,name,base_price,max_occupancy)").eq("id", editing.id).single()
-      setRooms(prev => prev.map(r => r.id === editing.id ? (data as Room) : r))
-      toast.success(`Room ${roomNum} updated`)
+  }
+
+  async function cycleStatus(room: Room) {
+    const next = NEXT_STATUS[room.status] || "available"
+    const { error } = await supabase.from("rooms").update({ status: next } as any).eq("id", room.id)
+    if (error) {
+      toast.error("Failed to update status")
     } else {
-      const { data, error } = await supabase.from("rooms").insert(payload).select("*, room_type_id:room_type_ids(id,name,base_price,max_occupancy)").single()
-      if (error) { toast.error(error.message); return }
-      setRooms(prev => [...prev, data as Room])
-      toast.success(`Room ${roomNum} added`)
+      toast.success("Room " + room.room_number + " → " + next)
+      setRooms((prev) => prev.map((r) => (r.id === room.id ? { ...r, status: next } : r)))
     }
-    setModal(null)
   }
 
-  /* ── Change room status inline ── */
-  const cycleStatus = async (room: Room) => {
-    const order: typeof STATUSES[number][] = ["available","cleaning","maintenance","blocked"]
-    if (room.status === "occupied") { toast.error("Cannot change occupied room status here"); return }
-    const next = order[(order.indexOf(room.status as any)+1) % order.length]
-    const { error } = await supabase.from("rooms").update({ status: next }).eq("id", room.id)
-    if (error) { toast.error(error.message); return }
-    setRooms(prev => prev.map(r => r.id===room.id ? {...r, status: next} : r))
-    toast.success(`Room ${room.room_number} → ${next}`)
+  async function saveRoom() {
+    if (!roomForm.room_number.trim()) { toast.error("Room number required"); return }
+    setSaving(true)
+    try {
+      const payload: any = {
+        room_number: roomForm.room_number.trim(),
+        floor: roomForm.floor ? parseInt(roomForm.floor) : null,
+        room_type_id: roomForm.room_type_id || null,
+        status: roomForm.status,
+        notes: roomForm.notes || null,
+      }
+      if (editRoom) {
+        const { error } = await supabase.from("rooms").update(payload).eq("id", editRoom.id)
+        if (error) throw error
+        toast.success("Room updated")
+      } else {
+        const { error } = await supabase.from("rooms").insert(payload)
+        if (error) throw error
+        toast.success("Room added")
+      }
+      setShowAddRoom(false)
+      setEditRoom(null)
+      setRoomForm({ room_number: "", floor: "", room_type_id: "", status: "available", notes: "" })
+      fetchAll()
+    } catch {
+      toast.error("Failed to save room")
+    } finally {
+      setSaving(false)
+    }
   }
 
-  /* ── Derived ── */
-  const filtered = filter === "all" ? rooms : rooms.filter(r => r.status === filter)
-  const stats = STATUSES.reduce((acc, s) => ({ ...acc, [s]: rooms.filter(r=>r.status===s).length }), {} as Record<string,number>)
+  async function saveType() {
+    if (!typeForm.name.trim()) { toast.error("Type name required"); return }
+    setSaving(true)
+    try {
+      const db2 = supabase as any
+      const { error } = await db2.from("room_types").insert({
+        name: typeForm.name.trim(),
+        base_price: parseFloat(typeForm.base_price) || 0,
+        capacity: parseInt(typeForm.capacity) || 1,
+      })
+      if (error) throw error
+      toast.success("Room type added")
+      setShowAddType(false)
+      setTypeForm({ name: "", base_price: "", capacity: "" })
+      fetchAll()
+    } catch {
+      toast.error("Failed to save room type")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function openEdit(room: Room) {
+    setRoomForm({
+      room_number: room.room_number,
+      floor: room.floor?.toString() || "",
+      room_type_id: room.room_type_id || "",
+      status: room.status,
+      notes: room.notes || "",
+    })
+    setEditRoom(room)
+    setShowAddRoom(true)
+  }
+
+  const counts = STATUS_LIST.reduce((acc, s) => {
+    acc[s] = s === "all" ? rooms.length : rooms.filter((r) => r.status === s).length
+    return acc
+  }, {} as Record<string, number>)
+
+  const filtered = filter === "all" ? rooms : rooms.filter((r) => r.status === filter)
+
+  if (loading) {
+    return (
+      <div style={{ padding: "28px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "16px" }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="skeleton" style={{ height: "140px", borderRadius: "16px" }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      {/* Page header */}
-      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28 }}>
+    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h1 style={{ fontSize:22,fontWeight:600,letterSpacing:-0.5,margin:0 }}>Rooms</h1>
-          <p style={{ fontSize:13,marginTop:3,...S }}>{rooms.length} rooms · {stats.occupied||0} occupied · {stats.available||0} available</p>
+          <h1 className="page-title">Rooms</h1>
+          <p className="page-sub">{rooms.length} rooms &middot; {counts.available || 0} available</p>
         </div>
-        <div style={{ display:"flex",gap:10 }}>
-          <button onClick={()=>setModal("addType")} style={{ fontSize:12,padding:"7px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,0.12)",background:"transparent",color:"rgba(255,255,255,0.7)",cursor:"pointer" }}>
-            + Room Type
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button className="btn btn-secondary btn-sm" onClick={fetchAll}>
+            <RefreshCw size={13} /> Refresh
           </button>
-          <button onClick={openAddRoom} style={{ fontSize:12,padding:"7px 16px",borderRadius:10,border:"none",background:"#6c5ce7",color:"#fff",fontWeight:500,cursor:"pointer" }}>
-            + Add Room
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowAddType(true)}>
+            <Plus size={13} /> Add Type
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => {
+            setEditRoom(null)
+            setRoomForm({ room_number: "", floor: "", room_type_id: "", status: "available", notes: "" })
+            setShowAddRoom(true)
+          }}>
+            <Plus size={13} /> Add Room
           </button>
         </div>
       </div>
 
-      {/* Stats row */}
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:24 }}>
-        {STATUSES.map(s => {
-          const cfg = STATUS_CFG[s]
-          return (
-            <button key={s} onClick={()=>setFilter(filter===s?"all":s)}
-              style={{ padding:"12px 14px",borderRadius:14,border:"1px solid "+(filter===s?cfg.border:"rgba(255,255,255,0.07)"),
-                background:filter===s?cfg.bg:"rgba(255,255,255,0.03)",cursor:"pointer",textAlign:"left",transition:"all 0.15s" }}>
-              <div style={{ fontSize:22,fontWeight:600,color:cfg.text,letterSpacing:-1 }}>{stats[s]||0}</div>
-              <div style={{ fontSize:11,marginTop:3,...S }}>{cfg.label}</div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Room types row */}
+      {/* Room Type Cards */}
       {roomTypes.length > 0 && (
-        <div style={{ marginBottom:24 }}>
-          <div style={{ fontSize:11,fontWeight:600,letterSpacing:"0.8px",textTransform:"uppercase",...S,marginBottom:10 }}>Room Types</div>
-          <div style={{ display:"flex",gap:10,flexWrap:"wrap" }}>
-            {roomTypes.map(rt => (
-              <div key={rt.id} style={{ padding:"10px 16px",borderRadius:12,border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.04)",display:"flex",alignItems:"center",gap:14 }}>
-                <div>
-                  <div style={{ fontSize:13,fontWeight:500,color:"var(--text-primary)" }}>{rt.name}</div>
-                  <div style={{ fontSize:11,...S,marginTop:2 }}>Max {rt.max_occupancy} guests · {fmt(rt.base_price)}/night</div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: "flex", gap: "10px", overflowX: "auto", marginBottom: "20px", paddingBottom: "4px" }}>
+          {roomTypes.map((t) => (
+            <div key={t.id} style={{
+              flexShrink: 0, background: "var(--bg-surface)", border: "1px solid var(--border)",
+              borderRadius: "12px", padding: "12px 16px", minWidth: "140px",
+            }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "4px" }}>{t.name}</div>
+              <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "13px", color: "var(--accent-light)", fontWeight: 500 }}>{fmt(t.base_price)}</div>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Capacity: {t.capacity}</div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* View toggle + filter info */}
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
-        <div style={{ fontSize:13,...S }}>
-          {filter==="all" ? `All ${rooms.length} rooms` : `${filtered.length} ${filter} rooms`}
+      {/* Filter + View Toggle */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
+        <div className="filter-tabs" style={{ flex: 1, minWidth: 0 }}>
+          {STATUS_LIST.map((s) => (
+            <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}>
+              {s === "all" ? "All Rooms" : STATUS_META[s]?.label || s}
+              <span className="tab-count">{counts[s] || 0}</span>
+            </button>
+          ))}
         </div>
-        <div style={{ display:"flex",gap:4,background:"rgba(255,255,255,0.04)",borderRadius:10,padding:3 }}>
-          {(["grid","list"] as const).map(v => (
-            <button key={v} onClick={()=>setView(v)} style={{
-              padding:"5px 12px",borderRadius:8,border:"none",fontSize:12,fontWeight:500,cursor:"pointer",
-              background: view===v?"rgba(108,92,231,0.25)":"transparent",
-              color: view===v?"#a29bfe":"rgba(255,255,255,0.4)",
-            }}>{v==="grid"?"⊞ Grid":"≡ List"}</button>
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", borderRadius: "10px", padding: "3px", gap: "2px", flexShrink: 0 }}>
+          {(["grid", "list"] as const).map((v) => (
+            <button key={v} onClick={() => setView(v)} style={{
+              padding: "5px 12px", borderRadius: "7px", border: "none", cursor: "pointer",
+              background: view === v ? "var(--bg-elevated)" : "transparent",
+              color: view === v ? "var(--text-primary)" : "var(--text-muted)",
+              fontSize: "12px", fontWeight: 500, transition: "all 150ms ease",
+              display: "flex", alignItems: "center", gap: "5px",
+            }}>
+              {v === "grid" ? <Grid3X3 size={13} /> : <List size={13} />}
+              {v === "grid" ? "Grid" : "List"}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* GRID VIEW */}
-      {view === "grid" && (
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12 }}>
-          {filtered.map(room => {
-            const cfg = STATUS_CFG[room.status]
-            const rt = room.room_type_id as any
+      {/* Empty State */}
+      {filtered.length === 0 && (
+        <div className="card-surface">
+          <div className="empty-state">
+            <BedDouble size={40} style={{ color: "var(--text-muted)", marginBottom: "16px" }} />
+            <div className="empty-state-title">No rooms found</div>
+            <div className="empty-state-sub">
+              {filter === "all" ? "Add your first room to get started" : "No rooms with this status"}
+            </div>
+            {filter === "all" && (
+              <button className="btn btn-primary btn-sm" style={{ marginTop: "20px" }} onClick={() => setShowAddRoom(true)}>
+                <Plus size={13} /> Add Room
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Grid View */}
+      {view === "grid" && filtered.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: "14px" }}>
+          {filtered.map((room) => {
+            const meta = STATUS_META[room.status] || STATUS_META.blocked
             return (
-              <div key={room.id}
-                style={{ border:"1px solid "+cfg.border,background:cfg.bg,borderRadius:16,padding:16,cursor:"pointer",transition:"all 0.15s",position:"relative" }}
-                onMouseEnter={e=>(e.currentTarget.style.transform="translateY(-2px)")}
-                onMouseLeave={e=>(e.currentTarget.style.transform="translateY(0)")}>
-                <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12 }}>
-                  <div style={{ fontSize:20,fontWeight:700,letterSpacing:-1,color:cfg.text }}>{room.room_number}</div>
-                  <span style={{ fontSize:9,fontWeight:600,padding:"3px 7px",borderRadius:99,background:"rgba(0,0,0,0.2)",color:cfg.text,letterSpacing:"0.3px" }}>
-                    {cfg.label.toUpperCase()}
+              <div key={room.id} className="card-surface" style={{ padding: "16px", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: meta.color, borderRadius: "16px 16px 0 0" }} />
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "20px", fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
+                    {room.room_number}
+                  </div>
+                  <span className={"pill " + meta.pill} style={{ fontSize: "10px", padding: "2px 8px" }}>
+                    {meta.label}
                   </span>
                 </div>
-                {rt && <div style={{ fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:4 }}>{rt.name}</div>}
-                {rt && <div style={{ fontSize:11,...S }}>{fmt(rt.base_price)}/night</div>}
-                {!rt && <div style={{ fontSize:11,...S }}>No type assigned</div>}
-                <div style={{ display:"flex",gap:6,marginTop:14 }}>
-                  <button onClick={()=>openEditRoom(room)}
-                    style={{ flex:1,fontSize:11,padding:"5px 0",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.6)",cursor:"pointer" }}>
-                    Edit
+                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>
+                  {room.room_type?.name || "No type"}
+                </div>
+                {room.room_type?.base_price && (
+                  <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--accent-light)", fontWeight: 500 }}>
+                    {fmt(room.room_type.base_price)}
+                    <span style={{ color: "var(--text-muted)", fontFamily: '"DM Sans", sans-serif' }}>/night</span>
+                  </div>
+                )}
+                {room.floor && (
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Floor {room.floor}</div>
+                )}
+                <div style={{ display: "flex", gap: "6px", marginTop: "12px" }}>
+                  <button className="btn btn-secondary btn-sm" style={{ flex: 1, padding: "5px 0", fontSize: "11px" }} onClick={() => openEdit(room)}>
+                    <Edit2 size={11} /> Edit
                   </button>
-                  {room.status !== "occupied" && (
-                    <button onClick={()=>cycleStatus(room)}
-                      style={{ flex:1,fontSize:11,padding:"5px 0",borderRadius:8,border:"1px solid "+cfg.border,background:"rgba(0,0,0,0.15)",color:cfg.text,cursor:"pointer" }}>
-                      Status ↻
-                    </button>
-                  )}
+                  <button className="btn btn-secondary btn-sm" style={{ flex: 1, padding: "5px 0", fontSize: "11px" }} onClick={() => cycleStatus(room)}>
+                    <RefreshCw size={11} /> {NEXT_STATUS[room.status] ? (STATUS_META[NEXT_STATUS[room.status]]?.label || "Next") : "Next"}
+                  </button>
                 </div>
               </div>
             )
           })}
-          {filtered.length === 0 && (
-            <div className="empty-state" style={{ gridColumn:"1/-1",padding:"60px 0" }}>
-              <div style={{ fontSize:32,marginBottom:8 }}>🛏</div>
-              <div>{rooms.length===0 ? "No rooms added yet — click + Add Room to start" : "No rooms match this filter"}</div>
+        </div>
+      )}
+
+      {/* List View */}
+      {view === "list" && filtered.length > 0 && (
+        <div className="card-surface" style={{ overflow: "hidden" }}>
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Room</th>
+                  <th>Type</th>
+                  <th>Floor</th>
+                  <th>Rate / Night</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((room) => {
+                  const meta = STATUS_META[room.status] || STATUS_META.blocked
+                  return (
+                    <tr key={room.id}>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "15px", fontWeight: 600, color: "var(--accent-light)" }}>
+                          {room.room_number}
+                        </span>
+                      </td>
+                      <td style={{ color: "var(--text-secondary)" }}>{room.room_type?.name || "—"}</td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', color: "var(--text-secondary)" }}>
+                          {room.floor ?? "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: '"DM Mono", monospace', color: "var(--text-primary)" }}>
+                          {room.room_type?.base_price ? fmt(room.room_type.base_price) : "—"}
+                        </span>
+                      </td>
+                      <td><span className={"pill " + meta.pill}>{meta.label}</span></td>
+                      <td>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => openEdit(room)}>
+                            <Edit2 size={12} /> Edit
+                          </button>
+                          <button className="btn btn-secondary btn-sm" onClick={() => cycleStatus(room)}>
+                            <RefreshCw size={12} /> {NEXT_STATUS[room.status] ? (STATUS_META[NEXT_STATUS[room.status]]?.label || "Next") : "Next"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Room Modal */}
+      {showAddRoom && (
+        <Modal title={editRoom ? "Edit Room " + editRoom.room_number : "Add New Room"} onClose={() => { setShowAddRoom(false); setEditRoom(null) }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div className="form-group">
+                <label className="form-label">Room Number *</label>
+                <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }} placeholder="e.g. 101"
+                  value={roomForm.room_number} onChange={(e) => setRoomForm((p) => ({ ...p, room_number: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Floor</label>
+                <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }} type="number" placeholder="e.g. 1"
+                  value={roomForm.floor} onChange={(e) => setRoomForm((p) => ({ ...p, floor: e.target.value }))} />
+              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* LIST VIEW */}
-      {view === "list" && (
-        <div className="card-surface" style={{ overflow:"hidden" }}>
-          <table className="data-table">
-            <thead><tr><th>Room</th><th>Type</th><th>Floor</th><th>Rate/Night</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {filtered.map(room => {
-                const cfg = STATUS_CFG[room.status]
-                const rt = room.room_type_id as any
-                return (
-                  <tr key={room.id}>
-                    <td><span style={{ fontWeight:600,fontSize:15,color:"var(--text-primary)" }}>{room.room_number}</span></td>
-                    <td>{rt?.name || <span style={{ ...S,fontSize:12 }}>—</span>}</td>
-                    <td style={{ fontSize:12,...S }}>{room.floor||"—"}</td>
-                    <td style={{ fontFamily:"DM Mono,monospace",fontSize:12 }}>{rt ? fmt(rt.base_price) : "—"}</td>
-                    <td><span style={{ fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:99,background:cfg.bg,color:cfg.text,border:"1px solid "+cfg.border }}>{cfg.label}</span></td>
-                    <td>
-                      <div style={{ display:"flex",gap:6 }}>
-                        <button onClick={()=>openEditRoom(room)} style={{ fontSize:12,padding:"4px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.7)",cursor:"pointer" }}>Edit</button>
-                        {room.status!=="occupied"&&<button onClick={()=>cycleStatus(room)} style={{ fontSize:12,padding:"4px 12px",borderRadius:8,border:"1px solid "+cfg.border,background:cfg.bg,color:cfg.text,cursor:"pointer" }}>↻</button>}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-              {filtered.length===0&&<tr><td colSpan={6}><div className="empty-state">No rooms found</div></td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ── MODAL: Add Room Type ── */}
-      {modal === "addType" && (
-        <Modal title="Add Room Type" onClose={()=>setModal(null)}>
-          <FInput label="Type Name" placeholder="e.g. Deluxe Suite" value={typeName} onChange={e=>setTypeName(e.target.value)}/>
-          <FInput label="Base Price (₹/night)" type="number" placeholder="2500" value={typePrice} onChange={e=>setTypePrice(e.target.value)}/>
-          <FInput label="Max Occupancy" type="number" min="1" max="10" value={typeOcc} onChange={e=>setTypeOcc(e.target.value)}/>
-          <FInput label="Description (optional)" placeholder="Spacious room with city view" value={typeDesc} onChange={e=>setTypeDesc(e.target.value)}/>
-          <div style={{ display:"flex",gap:10,marginTop:6 }}>
-            <button onClick={()=>setModal(null)} style={{ flex:1,padding:"10px 0",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.6)",cursor:"pointer",fontSize:13 }}>Cancel</button>
-            <button onClick={handleAddType} style={{ flex:1,padding:"10px 0",borderRadius:10,border:"none",background:"#6c5ce7",color:"#fff",fontWeight:500,cursor:"pointer",fontSize:13 }}>Add Type</button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div className="form-group">
+                <label className="form-label">Room Type</label>
+                <select className="form-select" value={roomForm.room_type_id}
+                  onChange={(e) => setRoomForm((p) => ({ ...p, room_type_id: e.target.value }))}>
+                  <option value="">No type</option>
+                  {roomTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select className="form-select" value={roomForm.status}
+                  onChange={(e) => setRoomForm((p) => ({ ...p, status: e.target.value }))}>
+                  {Object.entries(STATUS_META).map(([k, v]) => (
+                    <option key={k} value={k}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Notes</label>
+              <textarea className="form-textarea" placeholder="Optional notes about this room..."
+                value={roomForm.notes} onChange={(e) => setRoomForm((p) => ({ ...p, notes: e.target.value }))} />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => { setShowAddRoom(false); setEditRoom(null) }}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveRoom} disabled={saving}>
+              {saving ? "Saving..." : editRoom ? "Save Changes" : "Add Room"}
+            </button>
           </div>
         </Modal>
       )}
 
-      {/* ── MODAL: Add / Edit Room ── */}
-      {modal === "addRoom" && (
-        <Modal title={editing?"Edit Room":"Add Room"} onClose={()=>setModal(null)}>
-          <FInput label="Room Number" placeholder="101" value={roomNum} onChange={e=>setRoomNum(e.target.value)}/>
-          <FInput label="Floor" type="number" min="1" value={roomFloor} onChange={e=>setRoomFloor(e.target.value)}/>
-          {roomTypes.length > 0 ? (
-            <FSelect label="Room Type" value={roomTypeId} onChange={e=>setRoomTypeId(e.target.value)}>
-              <option value="">— No type —</option>
-              {roomTypes.map(rt=><option key={rt.id} value={rt.id}>{rt.name} · {fmt(rt.base_price)}/night</option>)}
-            </FSelect>
-          ) : (
-            <div style={{ padding:"10px 14px",borderRadius:10,background:"rgba(253,203,110,0.08)",border:"1px solid rgba(253,203,110,0.2)",marginBottom:14,fontSize:12,color:"#fdcb6e" }}>
-              Add a room type first before adding rooms
+      {/* Add Room Type Modal */}
+      {showAddType && (
+        <Modal title="Add Room Type" onClose={() => setShowAddType(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div className="form-group">
+              <label className="form-label">Type Name *</label>
+              <input className="form-input" placeholder="e.g. Deluxe Double"
+                value={typeForm.name} onChange={(e) => setTypeForm((p) => ({ ...p, name: e.target.value }))} />
             </div>
-          )}
-          <FSelect label="Status" value={roomStatus} onChange={e=>setRoomStatus(e.target.value as any)}>
-            {STATUSES.map(s=><option key={s} value={s}>{STATUS_CFG[s].label}</option>)}
-          </FSelect>
-          <div style={{ display:"flex",gap:10,marginTop:6 }}>
-            <button onClick={()=>setModal(null)} style={{ flex:1,padding:"10px 0",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.6)",cursor:"pointer",fontSize:13 }}>Cancel</button>
-            <button onClick={handleSaveRoom} style={{ flex:1,padding:"10px 0",borderRadius:10,border:"none",background:"#6c5ce7",color:"#fff",fontWeight:500,cursor:"pointer",fontSize:13 }}>{editing?"Save Changes":"Add Room"}</button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div className="form-group">
+                <label className="form-label">Base Price / Night (&#8377;)</label>
+                <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }} type="number" placeholder="e.g. 2500"
+                  value={typeForm.base_price} onChange={(e) => setTypeForm((p) => ({ ...p, base_price: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Capacity (guests)</label>
+                <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }} type="number" placeholder="e.g. 2"
+                  value={typeForm.capacity} onChange={(e) => setTypeForm((p) => ({ ...p, capacity: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setShowAddType(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveType} disabled={saving}>
+              {saving ? "Saving..." : "Add Type"}
+            </button>
           </div>
         </Modal>
       )}
+
     </div>
   )
 }
