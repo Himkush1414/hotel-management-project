@@ -16,13 +16,12 @@ export default function AdminLayout({
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-base)" }}>
       <Sidebar />
       <div
+        className="admin-main-content"
         style={{
           flex: 1,
-          marginLeft: "var(--sidebar-collapsed)",
           minWidth: 0,
           display: "flex",
           flexDirection: "column",
-          transition: "margin-left var(--transition-slow)",
         }}
       >
         {children}
@@ -36,6 +35,18 @@ export default function AdminLayout({
           },
         }}
       />
+      <style>{`
+        .admin-main-content {
+          margin-left: var(--sidebar-collapsed);
+          transition: margin-left var(--transition-slow);
+        }
+        @media (max-width: 767px) {
+          .admin-main-content {
+            margin-left: 0 !important;
+            margin-bottom: 60px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
