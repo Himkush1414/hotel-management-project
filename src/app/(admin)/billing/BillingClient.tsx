@@ -132,7 +132,6 @@ export default function BillingClient() {
         .update({ paid_amount: newPaid, status: newStatus })
         .eq("id", payInvoice.id)
       if (error) throw error
-      // log payment if payments table exists
       await db.from("payments").insert({
         invoice_id: payInvoice.id,
         amount,
@@ -174,7 +173,7 @@ export default function BillingClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: isMobile ? "12px" : "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "20px" }}>
         {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: "90px", borderRadius: "16px" }} />)}
       </div>
@@ -183,10 +182,17 @@ export default function BillingClient() {
   )
 
   return (
-    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{
+      padding: isMobile ? "12px" : "28px",
+      maxWidth: "1400px",
+      margin: "0 auto",
+      overflowX: "hidden",
+      width: "100%",
+      boxSizing: "border-box",
+    }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
           <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Billing</h1>
           <p className="page-sub">{invoices.length} invoices total</p>
@@ -197,9 +203,9 @@ export default function BillingClient() {
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "24px" }}>
         {[
-          { label: "Total Revenue",   value: fmt(totalRevenue),  icon: TrendingUp,   color: "var(--green)",  bg: "var(--green-bg)"  },
-          { label: "Pending Amount",  value: fmt(totalPending),  icon: Clock,        color: "var(--amber)",  bg: "var(--amber-bg)"  },
-          { label: "Paid Invoices",   value: String(paidCount),  icon: CheckCircle,  color: "var(--blue)",   bg: "var(--blue-bg)"   },
+          { label: "Total Revenue",  value: fmt(totalRevenue), icon: TrendingUp,  color: "var(--green)", bg: "var(--green-bg)" },
+          { label: "Pending Amount", value: fmt(totalPending), icon: Clock,       color: "var(--amber)", bg: "var(--amber-bg)" },
+          { label: "Paid Invoices",  value: String(paidCount), icon: CheckCircle, color: "var(--blue)",  bg: "var(--blue-bg)"  },
         ].map((card) => {
           const Icon = card.icon
           return (
@@ -218,18 +224,18 @@ export default function BillingClient() {
         })}
       </div>
 
-      {/* Filter Tabs + Search */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <div className="filter-tabs" style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
-          {STATUSES.map((s) => (
-            <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}>
-              {s === "all" ? "All" : STATUS_META[s]?.label || s}
-              <span className="tab-count">{counts[s] || 0}</span>
-            </button>
-          ))}
-        </div>
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "6px", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch", paddingBottom: "4px", marginBottom: "12px" }}>
+        {STATUSES.map((s) => (
+          <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}
+            style={{ flexShrink: 0 }}>
+            {s === "all" ? "All" : STATUS_META[s]?.label || s}
+            <span className="tab-count">{counts[s] || 0}</span>
+          </button>
+        ))}
       </div>
 
+      {/* Search */}
       <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input className="search-input" placeholder="Search by guest, invoice # or room..."
@@ -255,10 +261,62 @@ export default function BillingClient() {
         </div>
       )}
 
-      {/* Table */}
-      {filtered.length > 0 && (
+      {/* Mobile Cards View */}
+      {filtered.length > 0 && isMobile && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {filtered.map((inv) => {
+            const meta = STATUS_META[inv.status] || STATUS_META.pending
+            const name = guestName(inv)
+            const balance = inv.total_amount - (inv.paid_amount || 0)
+            return (
+              <div key={inv.id} className="card-surface" style={{ padding: "14px", position: "relative", overflow: "hidden" }}
+                onClick={() => setViewInvoice(inv)}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: meta.color, borderRadius: "16px 16px 0 0" }} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Avatar name={name} size={28} />
+                    <div>
+                      <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>{name}</div>
+                      <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "11px", color: "var(--accent-light)" }}>
+                        {inv.invoice_number || inv.id.slice(0, 8).toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                  <span className={"pill " + meta.pill} style={{ fontSize: "10px" }}>{meta.label}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Room {inv.booking?.room?.room_number || "—"} &middot; {fmtDate(inv.created_at)}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                      {fmt(inv.total_amount)}
+                    </div>
+                    {inv.status !== "paid" && (
+                      <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "11px", color: "var(--amber)" }}>
+                        Due: {fmt(balance)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {(inv.status === "pending" || inv.status === "partial") && (
+                  <button className="btn btn-secondary btn-sm" style={{ marginTop: "10px", width: "100%", fontSize: "12px", color: "var(--green)", borderColor: "var(--green-border)" }}
+                    onClick={(e) => { e.stopPropagation(); setPayInvoice(inv); setPayForm({ amount: String(balance), mode: "cash", notes: "" }) }}>
+                    <DollarSign size={12} /> Record Payment
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Desktop Table */}
+      {filtered.length > 0 && !isMobile && (
         <div className="card-surface" style={{ overflow: "hidden" }}>
-          <div className="table-wrapper">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -344,8 +402,6 @@ export default function BillingClient() {
       {viewInvoice && (
         <Modal title="Invoice Details" wide onClose={() => setViewInvoice(null)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-            {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
               <div>
                 <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "18px", fontWeight: 700, color: "var(--accent-light)", letterSpacing: "-0.3px" }}>
@@ -359,10 +415,7 @@ export default function BillingClient() {
                 {STATUS_META[viewInvoice.status]?.label || viewInvoice.status}
               </span>
             </div>
-
             <div style={{ height: "1px", background: "var(--border)" }} />
-
-            {/* Guest + Room */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "14px", border: "1px solid var(--border)" }}>
                 <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Guest</div>
@@ -388,15 +441,13 @@ export default function BillingClient() {
                 )}
               </div>
             </div>
-
-            {/* Amount breakdown */}
             <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "12px", padding: "16px", border: "1px solid var(--border)" }}>
               {[
-                { label: "Subtotal",  value: fmt(viewInvoice.subtotal || viewInvoice.total_amount), muted: true },
-                { label: "Tax",       value: fmt(viewInvoice.tax_amount || 0), muted: true },
-                { label: "Total",     value: fmt(viewInvoice.total_amount), bold: true },
-                { label: "Paid",      value: fmt(viewInvoice.paid_amount || 0), color: "var(--green)" },
-                { label: "Balance",   value: fmt(viewInvoice.total_amount - (viewInvoice.paid_amount || 0)), color: viewInvoice.status === "paid" ? "var(--green)" : "var(--amber)" },
+                { label: "Subtotal", value: fmt(viewInvoice.subtotal || viewInvoice.total_amount), muted: true },
+                { label: "Tax",      value: fmt(viewInvoice.tax_amount || 0), muted: true },
+                { label: "Total",    value: fmt(viewInvoice.total_amount), bold: true },
+                { label: "Paid",     value: fmt(viewInvoice.paid_amount || 0), color: "var(--green)" },
+                { label: "Balance",  value: fmt(viewInvoice.total_amount - (viewInvoice.paid_amount || 0)), color: viewInvoice.status === "paid" ? "var(--green)" : "var(--amber)" },
               ].map((row, idx) => (
                 <div key={row.label} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -412,8 +463,6 @@ export default function BillingClient() {
                 </div>
               ))}
             </div>
-
-            {/* Pay button */}
             {(viewInvoice.status === "pending" || viewInvoice.status === "partial") && (
               <button className="btn btn-primary" style={{ background: "var(--green)", boxShadow: "0 2px 8px rgba(0,184,148,0.25)" }}
                 onClick={() => {
@@ -433,8 +482,6 @@ export default function BillingClient() {
       {payInvoice && (
         <Modal title={"Record Payment — " + (payInvoice.invoice_number || payInvoice.id.slice(0, 8).toUpperCase())} onClose={() => setPayInvoice(null)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-
-            {/* Balance info */}
             <div style={{ background: "var(--accent-glow)", border: "1px solid var(--border-active)", borderRadius: "12px", padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Balance Due</div>
@@ -449,7 +496,6 @@ export default function BillingClient() {
                 </div>
               </div>
             </div>
-
             <div className="form-group">
               <label className="form-label">Amount (&#8377;) *</label>
               <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}

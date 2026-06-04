@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, BarChart, Bar, Cell
+  Tooltip, ResponsiveContainer
 } from "recharts"
 
 const fmt = (n: number) =>
@@ -131,20 +131,17 @@ export default function ExpensesClient() {
     finally { setSaving(false) }
   }
 
-  // This month total
   const now = new Date()
   const thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0")
   const thisMonthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth))
   const thisMonthTotal = thisMonthExpenses.reduce((s, e) => s + e.amount, 0)
   const allTotal = expenses.reduce((s, e) => s + e.amount, 0)
 
-  // Category totals for this month
   const catTotals = CATEGORIES.map((c) => ({
     ...c,
     total: thisMonthExpenses.filter((e) => e.category === c.key).reduce((s, e) => s + e.amount, 0),
   })).filter((c) => c.total > 0).sort((a, b) => b.total - a.total)
 
-  // 30-day trend
   const trendDays: { label: string; amount: number }[] = []
   for (let i = 29; i >= 0; i--) {
     const d = new Date()
@@ -171,8 +168,8 @@ export default function ExpensesClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: isMobile ? "12px" : "28px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "20px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: "14px" }}>
         {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: "90px", borderRadius: "16px" }} />)}
       </div>
       <div className="skeleton" style={{ height: "220px", borderRadius: "16px", marginBottom: "16px" }} />
@@ -181,15 +178,22 @@ export default function ExpensesClient() {
   )
 
   return (
-    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{
+      padding: isMobile ? "12px" : "28px",
+      maxWidth: "1400px",
+      margin: "0 auto",
+      overflowX: "hidden",
+      width: "100%",
+      boxSizing: "border-box",
+    }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
           <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Expenses</h1>
           <p className="page-sub">{expenses.length} total records</p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button className="btn btn-secondary btn-sm" onClick={fetchAll}><RefreshCw size={13} /> Refresh</button>
           <button className="btn btn-primary btn-sm" onClick={() => { setForm(BLANK); setShowAdd(true) }}>
             <Plus size={13} /> Add Expense
@@ -200,9 +204,9 @@ export default function ExpensesClient() {
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "24px" }}>
         {[
-          { label: "This Month",  value: fmt(thisMonthTotal), color: "var(--red)",    bg: "var(--red-bg)",    icon: TrendingDown },
-          { label: "All Time",    value: fmt(allTotal),       color: "var(--amber)",  bg: "var(--amber-bg)",  icon: Calendar     },
-          { label: "This Month Records", value: String(thisMonthExpenses.length), color: "var(--blue)", bg: "var(--blue-bg)", icon: ShoppingCart },
+          { label: "This Month",         value: fmt(thisMonthTotal),              color: "var(--red)",    bg: "var(--red-bg)",    icon: TrendingDown },
+          { label: "All Time",           value: fmt(allTotal),                    color: "var(--amber)",  bg: "var(--amber-bg)",  icon: Calendar     },
+          { label: "This Month Records", value: String(thisMonthExpenses.length), color: "var(--blue)",   bg: "var(--blue-bg)",   icon: ShoppingCart },
         ].map((card) => {
           const Icon = card.icon
           return (
@@ -225,10 +229,10 @@ export default function ExpensesClient() {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.6fr 1fr", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "24px" }}>
 
         {/* 30-day trend */}
-        <div className="card-surface animate-fade-in-1" style={{ padding: "20px" }}>
+        <div className="card-surface animate-fade-in-1" style={{ padding: isMobile ? "14px" : "20px" }}>
           <div className="section-label" style={{ marginBottom: "4px" }}>30-Day Expense Trend</div>
           <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px" }}>Daily spend over the last month</div>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={isMobile ? 140 : 180}>
             <AreaChart data={trendDays} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
@@ -248,11 +252,11 @@ export default function ExpensesClient() {
         </div>
 
         {/* Category breakdown */}
-        <div className="card-surface animate-fade-in-1" style={{ padding: "20px" }}>
+        <div className="card-surface animate-fade-in-1" style={{ padding: isMobile ? "14px" : "20px" }}>
           <div className="section-label" style={{ marginBottom: "4px" }}>This Month by Category</div>
           <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px" }}>Spend breakdown</div>
           {catTotals.length === 0 ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "140px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100px" }}>
               <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>No expenses this month</div>
             </div>
           ) : (
@@ -284,23 +288,24 @@ export default function ExpensesClient() {
         </div>
       </div>
 
-      {/* Filter + Search */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <div className="filter-tabs" style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
-          <button className={"filter-tab" + (filterCat === "all" ? " active" : "")} onClick={() => setFilterCat("all")}>
-            All <span className="tab-count">{expenses.length}</span>
-          </button>
-          {CATEGORIES.map((c) => {
-            const cnt = expenses.filter((e) => e.category === c.key).length
-            return (
-              <button key={c.key} className={"filter-tab" + (filterCat === c.key ? " active" : "")} onClick={() => setFilterCat(c.key)}>
-                {c.label} <span className="tab-count">{cnt}</span>
-              </button>
-            )
-          })}
-        </div>
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "6px", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch", paddingBottom: "4px", marginBottom: "12px" }}>
+        <button className={"filter-tab" + (filterCat === "all" ? " active" : "")} onClick={() => setFilterCat("all")}
+          style={{ flexShrink: 0 }}>
+          All <span className="tab-count">{expenses.length}</span>
+        </button>
+        {CATEGORIES.map((c) => {
+          const cnt = expenses.filter((e) => e.category === c.key).length
+          return (
+            <button key={c.key} className={"filter-tab" + (filterCat === c.key ? " active" : "")} onClick={() => setFilterCat(c.key)}
+              style={{ flexShrink: 0 }}>
+              {c.label} <span className="tab-count">{cnt}</span>
+            </button>
+          )
+        })}
       </div>
 
+      {/* Search */}
       <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input className="search-input" placeholder="Search by description or category..."
@@ -331,10 +336,45 @@ export default function ExpensesClient() {
         </div>
       )}
 
-      {/* Table */}
-      {filtered.length > 0 && (
+      {/* Mobile Cards */}
+      {filtered.length > 0 && isMobile && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {filtered.map((e) => {
+            const cat = CAT_MAP[e.category || "other"] || CAT_MAP.other
+            const Icon = cat.icon
+            return (
+              <div key={e.id} className="card-surface" style={{ padding: "14px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: cat.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon size={13} color={cat.color} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: 600, color: cat.color }}>{cat.label}</div>
+                      <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "11px", color: "var(--text-muted)" }}>{fmtDate(e.date)}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "15px", fontWeight: 700, color: "var(--red)" }}>
+                    {fmt(e.amount)}
+                  </div>
+                </div>
+                <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>{e.description || "—"}</div>
+                {e.paid_by && (
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Paid by: {e.paid_by}</div>
+                )}
+                {e.notes && (
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{e.notes}</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Desktop Table */}
+      {filtered.length > 0 && !isMobile && (
         <div className="card-surface" style={{ overflow: "hidden" }}>
-          <div className="table-wrapper">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -370,9 +410,7 @@ export default function ExpensesClient() {
                           <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{e.notes}</div>
                         )}
                       </td>
-                      <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-                        {e.paid_by || "—"}
-                      </td>
+                      <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>{e.paid_by || "—"}</td>
                       <td>
                         <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "13px", fontWeight: 600, color: "var(--red)" }}>
                           {fmt(e.amount)}

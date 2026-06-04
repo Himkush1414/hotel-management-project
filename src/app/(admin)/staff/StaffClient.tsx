@@ -173,22 +173,29 @@ export default function StaffClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: isMobile ? "12px" : "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
       <div className="skeleton" style={{ height: "48px", borderRadius: "12px", marginBottom: "16px" }} />
       <div className="skeleton" style={{ height: "500px", borderRadius: "16px" }} />
     </div>
   )
 
   return (
-    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{
+      padding: isMobile ? "12px" : "28px",
+      maxWidth: "1400px",
+      margin: "0 auto",
+      overflowX: "hidden",
+      width: "100%",
+      boxSizing: "border-box",
+    }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
           <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Staff</h1>
           <p className="page-sub">{staff.length} members &middot; {staff.filter((s) => s.is_active).length} active</p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button className="btn btn-secondary btn-sm" onClick={fetchStaff}><RefreshCw size={13} /> Refresh</button>
           <button className="btn btn-primary btn-sm" onClick={() => { setForm(BLANK); setShowAdd(true) }}>
             <Plus size={13} /> Add Staff
@@ -197,9 +204,10 @@ export default function StaffClient() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="filter-tabs" style={{ marginBottom: "12px", maxWidth: "100%", overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: "6px", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch", paddingBottom: "4px", marginBottom: "12px" }}>
         {ROLES.map((r) => (
-          <button key={r} className={"filter-tab" + (filter === r ? " active" : "")} onClick={() => setFilter(r)}>
+          <button key={r} className={"filter-tab" + (filter === r ? " active" : "")} onClick={() => setFilter(r)}
+            style={{ flexShrink: 0 }}>
             {r === "all" ? "All Staff" : ROLE_META[r]?.label || r}
             <span className="tab-count">{counts[r] || 0}</span>
           </button>
@@ -237,10 +245,58 @@ export default function StaffClient() {
         </div>
       )}
 
-      {/* Table */}
-      {filtered.length > 0 && (
+      {/* Mobile Cards */}
+      {filtered.length > 0 && isMobile && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {filtered.map((s) => {
+            const roleMeta = ROLE_META[s.role || "other"] || ROLE_META.other
+            const name = staffName(s)
+            return (
+              <div key={s.id} className="card-surface" style={{ padding: "14px" }}
+                onClick={() => setViewStaff(s)}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                  <Avatar name={name} size={36} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                    {s.email && (
+                      <div style={{ fontSize: "11px", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.email}</div>
+                    )}
+                  </div>
+                  <span className={"pill " + roleMeta.pill} style={{ fontSize: "10px", flexShrink: 0 }}>{roleMeta.label}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    {s.phone && (
+                      <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-secondary)" }}>{s.phone}</div>
+                    )}
+                    {s.employee_code && (
+                      <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-muted)" }}>{s.employee_code}</div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    <span className={"pill " + (s.is_active ? "pill-green" : "pill-gray")} style={{ fontSize: "10px" }}>
+                      {s.is_active ? "Active" : "Inactive"}
+                    </span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: "10px", padding: "4px 8px", opacity: togglingId === s.id ? 0.6 : 1 }}
+                      disabled={togglingId === s.id}
+                      onClick={(e) => { e.stopPropagation(); toggleActive(s) }}
+                    >
+                      {s.is_active ? "Deactivate" : "Activate"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Desktop Table */}
+      {filtered.length > 0 && !isMobile && (
         <div className="card-surface" style={{ overflow: "hidden" }}>
-          <div className="table-wrapper">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -293,7 +349,7 @@ export default function StaffClient() {
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <button
-                          className={"btn btn-secondary btn-sm"}
+                          className="btn btn-secondary btn-sm"
                           style={{ fontSize: "11px", opacity: togglingId === s.id ? 0.6 : 1 }}
                           disabled={togglingId === s.id}
                           onClick={() => toggleActive(s)}
@@ -314,8 +370,6 @@ export default function StaffClient() {
       {viewStaff && (
         <Modal title="Staff Profile" wide onClose={() => setViewStaff(null)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-            {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <Avatar name={staffName(viewStaff)} size={56} />
@@ -328,7 +382,7 @@ export default function StaffClient() {
                   )}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                 <span className={"pill " + (ROLE_META[viewStaff.role || "other"]?.pill || "pill-gray")} style={{ fontSize: "12px", padding: "4px 14px" }}>
                   {ROLE_META[viewStaff.role || "other"]?.label || viewStaff.role}
                 </span>
@@ -337,16 +391,13 @@ export default function StaffClient() {
                 </span>
               </div>
             </div>
-
             <div style={{ height: "1px", background: "var(--border)" }} />
-
-            {/* Info Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               {[
-                { icon: Phone,    label: "Phone",           value: viewStaff.phone,          mono: true  },
-                { icon: Shield,   label: "Employee Code",   value: viewStaff.employee_code,  mono: true  },
-                { icon: Calendar, label: "Joined",          value: viewStaff.join_date ? fmtDate(viewStaff.join_date) : null, mono: false },
-                { icon: Users,    label: "Address",         value: viewStaff.address,        mono: false },
+                { icon: Phone,    label: "Phone",         value: viewStaff.phone,         mono: true  },
+                { icon: Shield,   label: "Employee Code", value: viewStaff.employee_code, mono: true  },
+                { icon: Calendar, label: "Joined",        value: viewStaff.join_date ? fmtDate(viewStaff.join_date) : null, mono: false },
+                { icon: Users,    label: "Address",       value: viewStaff.address,       mono: false },
               ].filter((item) => item.value).map((item) => {
                 const Icon = item.icon
                 return (
@@ -364,8 +415,6 @@ export default function StaffClient() {
                 )
               })}
             </div>
-
-            {/* Toggle active */}
             <div style={{ display: "flex", gap: "8px" }}>
               <button
                 className={"btn btn-sm " + (viewStaff.is_active ? "btn-danger" : "btn-primary")}

@@ -8,6 +8,9 @@ import { ClipboardList, RefreshCw, CheckCircle, XCircle, Clock, Calendar, Users,
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
 
+const fmtDateShort = (d: string) =>
+  new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+
 const toDateStr = (d: Date) => d.toISOString().split("T")[0]
 
 const STATUSES = ["present", "absent", "half_day", "late", "leave"]
@@ -163,9 +166,9 @@ export default function AttendanceClient() {
   const unmarked = staff.length - Object.keys(attendance).length
 
   if (loading) return (
-    <div style={{ padding: isMobile ? "12px" : "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
       <div className="skeleton" style={{ height: "72px", borderRadius: "16px", marginBottom: "16px" }} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
         {[1,2,3,4,5,6].map((i) => (
           <div key={i} className="skeleton" style={{ height: "120px", borderRadius: "16px" }} />
         ))}
@@ -174,10 +177,17 @@ export default function AttendanceClient() {
   )
 
   return (
-    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{
+      padding: isMobile ? "12px" : "28px",
+      maxWidth: "1400px",
+      margin: "0 auto",
+      overflowX: "hidden",
+      width: "100%",
+      boxSizing: "border-box",
+    }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
           <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Attendance</h1>
           <p className="page-sub">{staff.length} active staff</p>
@@ -185,30 +195,32 @@ export default function AttendanceClient() {
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button className="btn btn-secondary btn-sm" onClick={fetchAll}><RefreshCw size={13} /> Refresh</button>
           <button className="btn btn-primary btn-sm" onClick={markAllPresent} disabled={bulkMarking}>
-            <CheckCircle size={13} /> {bulkMarking ? "Marking..." : "Mark All Present"}
+            <CheckCircle size={13} /> {bulkMarking ? "Marking..." : "All Present"}
           </button>
         </div>
       </div>
 
-      {/* Date Navigator */}
-      <div className="card-surface animate-fade-in" style={{ padding: "16px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button className="btn btn-secondary btn-sm" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => shiftDate(-1)}>
+      {/* Date Navigator — mobile-optimised */}
+      <div className="card-surface animate-fade-in" style={{ padding: isMobile ? "12px" : "16px 20px", marginBottom: "16px" }}>
+        {/* Row 1: prev/date/next */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between", marginBottom: isMobile ? "10px" : "0" }}>
+          <button className="btn btn-secondary btn-sm" style={{ width: "32px", height: "32px", padding: 0, flexShrink: 0 }} onClick={() => shiftDate(-1)}>
             <ChevronLeft size={16} />
           </button>
-          <div style={{ textAlign: "center", minWidth: "260px" }}>
-            <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>
-              {fmtDate(selectedDate)}
+          <div style={{ textAlign: "center", flex: 1 }}>
+            <div style={{ fontSize: isMobile ? "13px" : "15px", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>
+              {isMobile ? fmtDateShort(selectedDate) : fmtDate(selectedDate)}
             </div>
             {isToday && (
-              <span className="pill pill-green" style={{ fontSize: "10px", padding: "1px 8px", marginTop: "2px" }}>Today</span>
+              <span className="pill pill-green" style={{ fontSize: "10px", padding: "1px 8px", marginTop: "4px", display: "inline-block" }}>Today</span>
             )}
           </div>
-          <button className="btn btn-secondary btn-sm" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => shiftDate(1)} disabled={isToday}>
+          <button className="btn btn-secondary btn-sm" style={{ width: "32px", height: "32px", padding: 0, flexShrink: 0 }} onClick={() => shiftDate(1)} disabled={isToday}>
             <ChevronRight size={16} />
           </button>
         </div>
-        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        {/* Row 2: date input + today button */}
+        <div style={{ display: "flex", gap: "6px", alignItems: "center", justifyContent: "center" }}>
           <input
             type="date"
             value={selectedDate}
@@ -218,7 +230,7 @@ export default function AttendanceClient() {
               background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: "10px", padding: "7px 12px", fontSize: "13px",
               fontFamily: '"DM Mono", monospace', color: "var(--text-primary)",
-              outline: "none", cursor: "pointer",
+              outline: "none", cursor: "pointer", flex: isMobile ? 1 : "none",
             }}
           />
           {!isToday && (
@@ -230,41 +242,52 @@ export default function AttendanceClient() {
       </div>
 
       {/* Summary Strip */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", overflowX: "auto", paddingBottom: "4px" }}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch", paddingBottom: "4px" }}>
         {[
           { key: "present",  label: "Present",  val: counts.present  || 0 },
           { key: "absent",   label: "Absent",   val: counts.absent   || 0 },
           { key: "half_day", label: "Half Day", val: counts.half_day || 0 },
           { key: "late",     label: "Late",     val: counts.late     || 0 },
-          { key: "leave",    label: "On Leave", val: counts.leave    || 0 },
+          { key: "leave",    label: "Leave",    val: counts.leave    || 0 },
           { key: "unmarked", label: "Unmarked", val: unmarked >= 0 ? unmarked : 0 },
         ].map((item) => {
           const meta = STATUS_META[item.key]
           return (
             <div key={item.key} style={{
-              flexShrink: 0, background: "var(--bg-surface)", border: "1px solid var(--border)",
-              borderRadius: "12px", padding: "12px 20px", display: "flex", flexDirection: "column",
-              alignItems: "center", gap: "4px", minWidth: "90px",
+              flexShrink: 0,
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "12px",
+              padding: isMobile ? "10px 14px" : "12px 20px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+              minWidth: isMobile ? "70px" : "90px",
             }}>
               <div style={{
-                fontFamily: '"DM Mono", monospace', fontSize: "22px", fontWeight: 700,
-                color: meta?.color || "var(--text-muted)", lineHeight: 1,
+                fontFamily: '"DM Mono", monospace',
+                fontSize: isMobile ? "18px" : "22px",
+                fontWeight: 700,
+                color: meta?.color || "var(--text-muted)",
+                lineHeight: 1,
               }}>{item.val}</div>
-              <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>
                 {item.label}
               </div>
             </div>
           )
         })}
         <div style={{
-          flexShrink: 0, background: "var(--bg-surface)", border: "1px solid var(--border)",
-          borderRadius: "12px", padding: "12px 20px", display: "flex", flexDirection: "column",
-          alignItems: "center", gap: "4px", minWidth: "90px",
+          flexShrink: 0,
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          padding: isMobile ? "10px 14px" : "12px 20px",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+          minWidth: isMobile ? "70px" : "90px",
         }}>
-          <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>
+          <div style={{ fontFamily: '"DM Mono", monospace', fontSize: isMobile ? "18px" : "22px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>
             {staff.length}
           </div>
-          <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</div>
+          <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</div>
         </div>
       </div>
 
@@ -278,7 +301,11 @@ export default function AttendanceClient() {
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: isMobile ? "10px" : "14px",
+        }}>
           {staff.map((s) => {
             const rec = attendance[s.id]
             const currentStatus = rec?.status || null
@@ -287,8 +314,7 @@ export default function AttendanceClient() {
             const roleLower = (s.role || "other").toLowerCase()
 
             return (
-              <div key={s.id} className="card-surface animate-fade-in" style={{ padding: "18px", position: "relative", overflow: "hidden" }}>
-                {/* Status accent line */}
+              <div key={s.id} className="card-surface animate-fade-in" style={{ padding: isMobile ? "14px" : "18px", position: "relative", overflow: "hidden" }}>
                 {currentStatus && (
                   <div style={{
                     position: "absolute", top: 0, left: 0, right: 0, height: "3px",
@@ -296,31 +322,28 @@ export default function AttendanceClient() {
                     borderRadius: "16px 16px 0 0",
                   }} />
                 )}
-
-                {/* Staff Info */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
-                  <Avatar name={name} size={40} />
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                  <Avatar name={name} size={isMobile ? 34 : 40} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: isMobile ? "13px" : "14px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {name}
                     </div>
-                    <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "capitalize", marginTop: "2px" }}>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "capitalize", marginTop: "1px" }}>
                       {roleLower.replace("_", " ")}
                     </div>
                   </div>
-                  {currentStatus && (
-                    <span className={"pill " + (STATUS_META[currentStatus]?.pill || "pill-gray")} style={{ fontSize: "10px", padding: "2px 8px", flexShrink: 0 }}>
+                  {currentStatus ? (
+                    <span className={"pill " + (STATUS_META[currentStatus]?.pill || "pill-gray")} style={{ fontSize: "10px", padding: "2px 7px", flexShrink: 0 }}>
                       {STATUS_META[currentStatus]?.label}
                     </span>
-                  )}
-                  {!currentStatus && (
-                    <span className="pill pill-gray" style={{ fontSize: "10px", padding: "2px 8px", flexShrink: 0 }}>
+                  ) : (
+                    <span className="pill pill-gray" style={{ fontSize: "10px", padding: "2px 7px", flexShrink: 0 }}>
                       Unmarked
                     </span>
                   )}
                 </div>
 
-                {/* Status Buttons */}
+                {/* Status Buttons — 3+2 layout on mobile */}
                 <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
                   {STATUSES.map((status) => {
                     const meta = STATUS_META[status]
@@ -331,9 +354,9 @@ export default function AttendanceClient() {
                         disabled={isSaving}
                         onClick={() => markStatus(s.id, status)}
                         style={{
-                          padding: "5px 10px",
+                          padding: isMobile ? "4px 8px" : "5px 10px",
                           borderRadius: "8px",
-                          fontSize: "11px",
+                          fontSize: isMobile ? "10px" : "11px",
                           fontWeight: 600,
                           cursor: isSaving ? "not-allowed" : "pointer",
                           border: "1px solid " + (isActive ? meta.color : "rgba(255,255,255,0.08)"),
