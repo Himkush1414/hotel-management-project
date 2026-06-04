@@ -62,6 +62,15 @@ export default function AttendanceClient() {
   const db = createClient() as any
 
   const [staff, setStaff] = useState<Staff[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -154,7 +163,7 @@ export default function AttendanceClient() {
   const unmarked = staff.length - Object.keys(attendance).length
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
       <div className="skeleton" style={{ height: "72px", borderRadius: "16px", marginBottom: "16px" }} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
         {[1,2,3,4,5,6].map((i) => (
@@ -165,12 +174,12 @@ export default function AttendanceClient() {
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Attendance</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Attendance</h1>
           <p className="page-sub">{staff.length} active staff</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>

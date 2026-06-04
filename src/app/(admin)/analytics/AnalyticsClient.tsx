@@ -79,6 +79,15 @@ export default function AnalyticsClient() {
   const db = createClient() as any
 
   const [data, setData] = useState<DayData[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [loading, setLoading] = useState(true)
   const [totalRooms, setTotalRooms] = useState(0)
 
@@ -146,8 +155,8 @@ export default function AnalyticsClient() {
   const profitMargin  = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "20px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "20px" }}>
         {[1,2,3,4].map((i) => <div key={i} className="skeleton" style={{ height: "100px", borderRadius: "16px" }} />)}
       </div>
       <div className="skeleton" style={{ height: "300px", borderRadius: "16px", marginBottom: "16px" }} />
@@ -156,12 +165,12 @@ export default function AnalyticsClient() {
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Analytics</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Analytics</h1>
           <p className="page-sub">Last 30 days performance overview</p>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={fetchAll}>
@@ -170,7 +179,7 @@ export default function AnalyticsClient() {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "20px" }}>
         {[
           {
             label: "Total Revenue",
@@ -335,7 +344,7 @@ export default function AnalyticsClient() {
       </div>
 
       {/* Summary Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px" }}>
         {[
           {
             label: "Best Revenue Day",

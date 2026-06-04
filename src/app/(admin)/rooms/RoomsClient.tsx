@@ -63,6 +63,15 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 export default function RoomsClient() {
   const supabase = createClient()
   const [rooms, setRooms] = useState<Room[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
@@ -182,8 +191,8 @@ export default function RoomsClient() {
 
   if (loading) {
     return (
-      <div style={{ padding: "28px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "16px" }}>
+      <div style={{ padding: isMobile ? "12px" : "28px", overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(160px, 1fr))", gap: isMobile ? "10px" : "16px" }}>
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="skeleton" style={{ height: "140px", borderRadius: "16px" }} />
           ))}
@@ -193,12 +202,26 @@ export default function RoomsClient() {
   }
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{
+      padding: isMobile ? "12px" : "28px",
+      maxWidth: "1400px",
+      margin: "0 auto",
+      overflowX: "hidden",
+      width: "100%",
+      boxSizing: "border-box",
+    }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        marginBottom: isMobile ? "16px" : "24px",
+        flexWrap: "wrap",
+        gap: "10px",
+      }}>
         <div>
-          <h1 className="page-title">Rooms</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Rooms</h1>
           <p className="page-sub">{rooms.length} rooms &middot; {counts.available || 0} available</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -220,11 +243,23 @@ export default function RoomsClient() {
 
       {/* Room Type Cards */}
       {roomTypes.length > 0 && (
-        <div style={{ display: "flex", gap: "10px", overflowX: "auto", marginBottom: "20px", paddingBottom: "4px" }}>
+        <div style={{
+          display: "flex",
+          gap: "10px",
+          overflowX: "auto",
+          marginBottom: "20px",
+          paddingBottom: "6px",
+          flexWrap: "nowrap",
+          WebkitOverflowScrolling: "touch",
+        }}>
           {roomTypes.map((t) => (
             <div key={t.id} style={{
-              flexShrink: 0, background: "var(--bg-surface)", border: "1px solid var(--border)",
-              borderRadius: "12px", padding: "12px 16px", minWidth: "140px",
+              flexShrink: 0,
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              minWidth: isMobile ? "130px" : "140px",
             }}>
               <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "4px" }}>{t.name}</div>
               <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "13px", color: "var(--accent-light)", fontWeight: 500 }}>{fmt(t.base_price)}</div>
@@ -235,23 +270,55 @@ export default function RoomsClient() {
       )}
 
       {/* Filter + View Toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
-        <div className="filter-tabs" style={{ flex: 1, minWidth: 0 }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: "20px",
+        gap: "8px",
+        flexWrap: isMobile ? "wrap" : "nowrap",
+      }}>
+        <div style={{
+          display: "flex",
+          gap: "6px",
+          overflowX: "auto",
+          flexWrap: "nowrap",
+          WebkitOverflowScrolling: "touch",
+          paddingBottom: "4px",
+          flex: 1,
+          minWidth: 0,
+        }}>
           {STATUS_LIST.map((s) => (
-            <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}>
+            <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}
+              style={{ flexShrink: 0 }}>
               {s === "all" ? "All Rooms" : STATUS_META[s]?.label || s}
               <span className="tab-count">{counts[s] || 0}</span>
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", borderRadius: "10px", padding: "3px", gap: "2px", flexShrink: 0 }}>
+        <div style={{
+          display: "flex",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid var(--border)",
+          borderRadius: "10px",
+          padding: "3px",
+          gap: "2px",
+          flexShrink: 0,
+        }}>
           {(["grid", "list"] as const).map((v) => (
             <button key={v} onClick={() => setView(v)} style={{
-              padding: "5px 12px", borderRadius: "7px", border: "none", cursor: "pointer",
+              padding: "5px 12px",
+              borderRadius: "7px",
+              border: "none",
+              cursor: "pointer",
               background: view === v ? "var(--bg-elevated)" : "transparent",
               color: view === v ? "var(--text-primary)" : "var(--text-muted)",
-              fontSize: "12px", fontWeight: 500, transition: "all 150ms ease",
-              display: "flex", alignItems: "center", gap: "5px",
+              fontSize: "12px",
+              fontWeight: 500,
+              transition: "all 150ms ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
             }}>
               {v === "grid" ? <Grid3X3 size={13} /> : <List size={13} />}
               {v === "grid" ? "Grid" : "List"}
@@ -280,38 +347,49 @@ export default function RoomsClient() {
 
       {/* Grid View */}
       {view === "grid" && filtered.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: "14px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(165px, 1fr))",
+          gap: isMobile ? "10px" : "14px",
+        }}>
           {filtered.map((room) => {
             const meta = STATUS_META[room.status] || STATUS_META.blocked
             return (
-              <div key={room.id} className="card-surface" style={{ padding: "16px", position: "relative", overflow: "hidden" }}>
+              <div key={room.id} className="card-surface" style={{ padding: isMobile ? "12px" : "16px", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: meta.color, borderRadius: "16px 16px 0 0" }} />
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "20px", fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "8px", gap: "4px" }}>
+                  <div style={{
+                    fontFamily: '"DM Mono", monospace',
+                    fontSize: isMobile ? "16px" : "20px",
+                    fontWeight: 600,
+                    color: "var(--text-primary)",
+                    letterSpacing: "-0.5px",
+                  }}>
                     {room.room_number}
                   </div>
-                  <span className={"pill " + meta.pill} style={{ fontSize: "10px", padding: "2px 8px" }}>
+                  <span className={"pill " + meta.pill} style={{ fontSize: "9px", padding: "2px 6px", flexShrink: 0 }}>
                     {meta.label}
                   </span>
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>
                   {room.room_type?.name || "No type"}
                 </div>
                 {room.room_type?.base_price && (
-                  <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--accent-light)", fontWeight: 500 }}>
+                  <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "11px", color: "var(--accent-light)", fontWeight: 500 }}>
                     {fmt(room.room_type.base_price)}
                     <span style={{ color: "var(--text-muted)", fontFamily: '"DM Sans", sans-serif' }}>/night</span>
                   </div>
                 )}
                 {room.floor && (
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Floor {room.floor}</div>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>Floor {room.floor}</div>
                 )}
-                <div style={{ display: "flex", gap: "6px", marginTop: "12px" }}>
-                  <button className="btn btn-secondary btn-sm" style={{ flex: 1, padding: "5px 0", fontSize: "11px" }} onClick={() => openEdit(room)}>
-                    <Edit2 size={11} /> Edit
+                <div style={{ display: "flex", gap: "5px", marginTop: "10px" }}>
+                  <button className="btn btn-secondary btn-sm" style={{ flex: 1, padding: "4px 0", fontSize: "10px" }} onClick={() => openEdit(room)}>
+                    <Edit2 size={10} /> Edit
                   </button>
-                  <button className="btn btn-secondary btn-sm" style={{ flex: 1, padding: "5px 0", fontSize: "11px" }} onClick={() => cycleStatus(room)}>
-                    <RefreshCw size={11} /> {NEXT_STATUS[room.status] ? (STATUS_META[NEXT_STATUS[room.status]]?.label || "Next") : "Next"}
+                  <button className="btn btn-secondary btn-sm" style={{ flex: 1, padding: "4px 0", fontSize: "10px" }} onClick={() => cycleStatus(room)}>
+                    <RefreshCw size={10} />
+                    {isMobile ? "→" : (NEXT_STATUS[room.status] ? (STATUS_META[NEXT_STATUS[room.status]]?.label || "Next") : "Next")}
                   </button>
                 </div>
               </div>
@@ -323,8 +401,8 @@ export default function RoomsClient() {
       {/* List View */}
       {view === "list" && filtered.length > 0 && (
         <div className="card-surface" style={{ overflow: "hidden" }}>
-          <div className="table-wrapper">
-            <table className="data-table">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table className="data-table" style={{ minWidth: isMobile ? "540px" : undefined }}>
               <thead>
                 <tr>
                   <th>Room</th>
@@ -380,7 +458,7 @@ export default function RoomsClient() {
       {showAddRoom && (
         <Modal title={editRoom ? "Edit Room " + editRoom.room_number : "Add New Room"} onClose={() => { setShowAddRoom(false); setEditRoom(null) }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Room Number *</label>
                 <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }} placeholder="e.g. 101"
@@ -392,7 +470,7 @@ export default function RoomsClient() {
                   value={roomForm.floor} onChange={(e) => setRoomForm((p) => ({ ...p, floor: e.target.value }))} />
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Room Type</label>
                 <select className="form-select" value={roomForm.room_type_id}
@@ -435,7 +513,7 @@ export default function RoomsClient() {
               <input className="form-input" placeholder="e.g. Deluxe Double"
                 value={typeForm.name} onChange={(e) => setTypeForm((p) => ({ ...p, name: e.target.value }))} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Base Price / Night (&#8377;)</label>
                 <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }} type="number" placeholder="e.g. 2500"

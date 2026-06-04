@@ -93,6 +93,15 @@ export default function GuestsClient() {
   const db = createClient() as any
 
   const [guests, setGuests] = useState<Guest[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [showAdd, setShowAdd] = useState(false)
@@ -169,19 +178,19 @@ export default function GuestsClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
       <div className="skeleton" style={{ height: "48px", borderRadius: "12px", marginBottom: "16px" }} />
       <div className="skeleton" style={{ height: "500px", borderRadius: "16px" }} />
     </div>
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Guests</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Guests</h1>
           <p className="page-sub">{guests.length} registered guests</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
@@ -193,7 +202,7 @@ export default function GuestsClient() {
       </div>
 
       {/* Search */}
-      <div className="search-wrap" style={{ marginBottom: "20px", maxWidth: "360px" }}>
+      <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input className="search-input" placeholder="Search by name, phone or ID..."
           value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -394,7 +403,7 @@ export default function GuestsClient() {
       {showAdd && (
         <Modal title="Add New Guest" wide onClose={() => setShowAdd(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Full Name *</label>
                 <input className="form-input" placeholder="e.g. Rahul Sharma"
@@ -412,7 +421,7 @@ export default function GuestsClient() {
               <input className="form-input" placeholder="e.g. rahul@email.com" type="email"
                 value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">ID Type</label>
                 <select className="form-select" value={form.id_type}
@@ -432,7 +441,7 @@ export default function GuestsClient() {
                   value={form.id_number} onChange={(e) => setForm((p) => ({ ...p, id_number: e.target.value }))} />
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Nationality</label>
                 <input className="form-input" placeholder="e.g. Indian"

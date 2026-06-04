@@ -77,6 +77,15 @@ export default function ExpensesClient() {
   const db = createClient() as any
 
   const [expenses, setExpenses] = useState<Expense[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [filterCat, setFilterCat] = useState("all")
@@ -162,8 +171,8 @@ export default function ExpensesClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "20px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "20px" }}>
         {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: "90px", borderRadius: "16px" }} />)}
       </div>
       <div className="skeleton" style={{ height: "220px", borderRadius: "16px", marginBottom: "16px" }} />
@@ -172,12 +181,12 @@ export default function ExpensesClient() {
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Expenses</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Expenses</h1>
           <p className="page-sub">{expenses.length} total records</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
@@ -189,7 +198,7 @@ export default function ExpensesClient() {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "24px" }}>
         {[
           { label: "This Month",  value: fmt(thisMonthTotal), color: "var(--red)",    bg: "var(--red-bg)",    icon: TrendingDown },
           { label: "All Time",    value: fmt(allTotal),       color: "var(--amber)",  bg: "var(--amber-bg)",  icon: Calendar     },
@@ -213,7 +222,7 @@ export default function ExpensesClient() {
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "16px", marginBottom: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.6fr 1fr", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "24px" }}>
 
         {/* 30-day trend */}
         <div className="card-surface animate-fade-in-1" style={{ padding: "20px" }}>
@@ -277,7 +286,7 @@ export default function ExpensesClient() {
 
       {/* Filter + Search */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <div className="filter-tabs" style={{ flex: 1, minWidth: 0 }}>
+        <div className="filter-tabs" style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
           <button className={"filter-tab" + (filterCat === "all" ? " active" : "")} onClick={() => setFilterCat("all")}>
             All <span className="tab-count">{expenses.length}</span>
           </button>
@@ -292,7 +301,7 @@ export default function ExpensesClient() {
         </div>
       </div>
 
-      <div className="search-wrap" style={{ marginBottom: "20px", maxWidth: "360px" }}>
+      <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input className="search-input" placeholder="Search by description or category..."
           value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -382,7 +391,7 @@ export default function ExpensesClient() {
       {showAdd && (
         <Modal title="Add Expense" onClose={() => setShowAdd(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Category</label>
                 <select className="form-select" value={form.category}
@@ -403,7 +412,7 @@ export default function ExpensesClient() {
               <input className="form-input" placeholder="e.g. AC repair in Room 203"
                 value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Amount (&#8377;) *</label>
                 <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}

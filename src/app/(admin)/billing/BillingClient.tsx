@@ -87,6 +87,15 @@ export default function BillingClient() {
   const db = createClient() as any
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
   const [search, setSearch] = useState("")
@@ -165,8 +174,8 @@ export default function BillingClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "20px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "20px" }}>
         {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: "90px", borderRadius: "16px" }} />)}
       </div>
       <div className="skeleton" style={{ height: "500px", borderRadius: "16px" }} />
@@ -174,19 +183,19 @@ export default function BillingClient() {
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Billing</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Billing</h1>
           <p className="page-sub">{invoices.length} invoices total</p>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={fetchAll}><RefreshCw size={13} /> Refresh</button>
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "10px" : "16px", marginBottom: isMobile ? "14px" : "24px" }}>
         {[
           { label: "Total Revenue",   value: fmt(totalRevenue),  icon: TrendingUp,   color: "var(--green)",  bg: "var(--green-bg)"  },
           { label: "Pending Amount",  value: fmt(totalPending),  icon: Clock,        color: "var(--amber)",  bg: "var(--amber-bg)"  },
@@ -211,7 +220,7 @@ export default function BillingClient() {
 
       {/* Filter Tabs + Search */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <div className="filter-tabs" style={{ flex: 1, minWidth: 0 }}>
+        <div className="filter-tabs" style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
           {STATUSES.map((s) => (
             <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}>
               {s === "all" ? "All" : STATUS_META[s]?.label || s}
@@ -221,7 +230,7 @@ export default function BillingClient() {
         </div>
       </div>
 
-      <div className="search-wrap" style={{ marginBottom: "20px", maxWidth: "360px" }}>
+      <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input className="search-input" placeholder="Search by guest, invoice # or room..."
           value={search} onChange={(e) => setSearch(e.target.value)} />

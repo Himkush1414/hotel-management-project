@@ -13,37 +13,37 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-base)" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-base)", overflow: "hidden" }}>
       <Sidebar />
-      <div
-        className="admin-main-content"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div className="admin-content">
         {children}
       </div>
       <Toaster
         position="bottom-right"
         toastOptions={{
           duration: 3500,
-          style: {
-            fontFamily: '"DM Sans", sans-serif',
-          },
+          style: { fontFamily: '"DM Sans", sans-serif' },
         }}
       />
       <style>{`
-        .admin-main-content {
-          margin-left: var(--sidebar-collapsed);
-          transition: margin-left var(--transition-slow);
+        .admin-content {
+          flex: 1;
+          min-width: 0;
+          max-width: 100%;
+          display: flex;
+          flex-direction: column;
+          margin-left: 64px;
+          overflow-x: hidden;
+          transition: margin-left 220ms cubic-bezier(0.4,0,0.2,1);
+          width: calc(100% - 64px);
         }
         @media (max-width: 767px) {
-          .admin-main-content {
+          .admin-content {
             margin-left: 0 !important;
-            margin-bottom: 60px;
+            width: 100vw !important;
+            max-width: 100vw !important;
+            padding-bottom: 70px;
+            overflow-x: hidden !important;
           }
         }
       `}</style>

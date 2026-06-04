@@ -64,6 +64,15 @@ export default function SettingsClient() {
   const db = createClient() as any
 
   const [settings, setSettings] = useState<HotelSettings>({})
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -109,7 +118,7 @@ export default function SettingsClient() {
   }
 
   if (loading) return (
-    <div style={{ padding: "28px", maxWidth: "760px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "760px", margin: "0 auto" }}>
       {[1,2,3,4].map((i) => (
         <div key={i} className="skeleton" style={{ height: "200px", borderRadius: "16px", marginBottom: "16px" }} />
       ))}
@@ -117,12 +126,12 @@ export default function SettingsClient() {
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "760px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "760px", margin: "0 auto" }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h1 className="page-title">Settings</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Settings</h1>
           <p className="page-sub">Manage your hotel configuration</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
@@ -156,7 +165,7 @@ export default function SettingsClient() {
               value={settings.address || ""}
               onChange={(e) => set("address", e.target.value)} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
             <div className="form-group">
               <label className="form-label">Phone</label>
               <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}
@@ -190,7 +199,7 @@ export default function SettingsClient() {
         iconBg="var(--green-bg)"
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
             <div className="form-group">
               <label className="form-label">Tax Name</label>
               <input className="form-input" placeholder="e.g. GST"
@@ -235,7 +244,7 @@ export default function SettingsClient() {
         iconColor="var(--blue)"
         iconBg="var(--blue-bg)"
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
           <div className="form-group">
             <label className="form-label">Check-in Time</label>
             <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}
@@ -267,7 +276,7 @@ export default function SettingsClient() {
         iconColor="var(--amber)"
         iconBg="var(--amber-bg)"
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
           <div className="form-group">
             <label className="form-label">Currency Code</label>
             <select className="form-select"

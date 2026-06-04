@@ -59,6 +59,20 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ═══ CRITICAL: Prevent ALL horizontal overflow ═══ */
+html {
+  overflow-x: hidden !important;
+}
+body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+#__next, [data-nextjs-scroll-focus-boundary] {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
@@ -238,3 +252,231 @@ body {
 [data-sonner-toast] { background: var(--bg-elevated) !important; border: 1px solid var(--border-hover) !important; border-radius: var(--radius-md) !important; color: var(--text-primary) !important; font-size: 13px !important; box-shadow: var(--shadow-modal) !important; }
 [data-sonner-toast][data-type="success"] { border-color: var(--green-border) !important; }
 [data-sonner-toast][data-type="error"] { border-color: var(--red-border) !important; }
+
+/* ═══════════════════════════════════
+   CRITICAL MOBILE FIXES
+   ═══════════════════════════════════ */
+
+/* Prevent horizontal overflow on all screens */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* All page wrappers must not overflow */
+* {
+  max-width: 100%;
+}
+
+/* Mobile: full width pages, proper padding */
+@media (max-width: 767px) {
+  /* Hide desktop sidebar completely */
+  aside {
+    display: none !important;
+  }
+
+  /* Page content takes full width */
+  .admin-content {
+    margin-left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Stat value font smaller on mobile */
+  .stat-value {
+    font-size: 20px !important;
+  }
+
+  /* Grid overrides */
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Tables: horizontal scroll */
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards: reduce padding */
+  .card-surface {
+    border-radius: 12px !important;
+  }
+
+  /* Filter tabs: scroll horizontally */
+  .filter-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Modals: full bottom sheet */
+  .modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-container {
+    border-radius: 20px 20px 0 0 !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    padding: 20px 16px !important;
+  }
+
+  /* Buttons: minimum touch target */
+  .btn {
+    min-height: 40px;
+  }
+
+  /* Page title smaller */
+  .page-title {
+    font-size: 18px !important;
+  }
+
+  /* Bottom nav bar always on top */
+  nav[style*="position: fixed"] {
+    z-index: 9999 !important;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 390px) {
+  .grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════
+   GLOBAL MOBILE RESPONSIVE FIXES
+   ═══════════════════════════════════ */
+@media (max-width: 767px) {
+  /* No horizontal scroll on body */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+  }
+
+  /* All tables scroll horizontally */
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  /* Cards full width */
+  .card-surface {
+    width: 100% !important;
+  }
+
+  /* Filter tabs scroll */
+  .filter-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 2px !important;
+  }
+  .filter-tabs::-webkit-scrollbar { display: none !important; }
+
+  /* Stat cards */
+  .stat-card {
+    min-height: 80px !important;
+    padding: 14px !important;
+  }
+  .stat-value {
+    font-size: 18px !important;
+  }
+  .stat-label {
+    font-size: 10px !important;
+  }
+
+  /* Buttons wrap properly */
+  .btn {
+    min-height: 40px !important;
+    font-size: 12px !important;
+  }
+
+  /* Page titles */
+  .page-title {
+    font-size: 18px !important;
+  }
+  .page-sub {
+    font-size: 11px !important;
+  }
+
+  /* Modal full screen on mobile */
+  .modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-container {
+    border-radius: 20px 20px 0 0 !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+    max-height: 90vh !important;
+    padding: 20px 16px 32px !important;
+  }
+
+  /* Charts shorter on mobile */
+  .recharts-responsive-container {
+    min-height: 160px !important;
+  }
+
+  /* Section labels smaller */
+  .section-label {
+    font-size: 10px !important;
+  }
+
+  /* Form inputs full width */
+  .form-input, .form-select, .form-textarea {
+    font-size: 16px !important;
+  }
+
+  /* Search full width */
+  .search-wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .search-input {
+    width: 100% !important;
+    font-size: 14px !important;
+  }
+
+  /* Pills smaller */
+  .pill {
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+  }
+
+  /* Empty state compact */
+  .empty-state {
+    padding: 40px 16px !important;
+  }
+
+  /* Attendance grid single column */
+  .attendance-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Extra small phones */  
+@media (max-width: 380px) {
+  .stat-value {
+    font-size: 15px !important;
+  }
+  .btn-sm {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+}

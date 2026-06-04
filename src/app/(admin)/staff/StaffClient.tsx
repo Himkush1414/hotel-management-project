@@ -78,6 +78,15 @@ export default function StaffClient() {
   const db = createClient() as any
 
   const [staff, setStaff] = useState<Staff[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
   const [search, setSearch] = useState("")
@@ -164,19 +173,19 @@ export default function StaffClient() {
   })
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
       <div className="skeleton" style={{ height: "48px", borderRadius: "12px", marginBottom: "16px" }} />
       <div className="skeleton" style={{ height: "500px", borderRadius: "16px" }} />
     </div>
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Staff</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Staff</h1>
           <p className="page-sub">{staff.length} members &middot; {staff.filter((s) => s.is_active).length} active</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
@@ -188,7 +197,7 @@ export default function StaffClient() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="filter-tabs" style={{ marginBottom: "16px" }}>
+      <div className="filter-tabs" style={{ marginBottom: "12px", maxWidth: "100%", overflowX: "auto" }}>
         {ROLES.map((r) => (
           <button key={r} className={"filter-tab" + (filter === r ? " active" : "")} onClick={() => setFilter(r)}>
             {r === "all" ? "All Staff" : ROLE_META[r]?.label || r}
@@ -198,7 +207,7 @@ export default function StaffClient() {
       </div>
 
       {/* Search */}
-      <div className="search-wrap" style={{ marginBottom: "20px", maxWidth: "360px" }}>
+      <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input className="search-input" placeholder="Search by name, phone or code..."
           value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -374,7 +383,7 @@ export default function StaffClient() {
       {showAdd && (
         <Modal title="Add Staff Member" wide onClose={() => setShowAdd(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Full Name *</label>
                 <input className="form-input" placeholder="e.g. Amit Kumar"
@@ -387,7 +396,7 @@ export default function StaffClient() {
                   value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Email</label>
                 <input className="form-input" placeholder="e.g. amit@hotel.com" type="email"
@@ -403,7 +412,7 @@ export default function StaffClient() {
                 </select>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Employee Code</label>
                 <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}

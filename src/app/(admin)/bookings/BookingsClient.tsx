@@ -87,6 +87,15 @@ export default function BookingsClient() {
   const db = supabase as any
 
   const [bookings, setBookings] = useState<Booking[]>([])
+
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   const [guests, setGuests] = useState<Guest[]>([])
   const [availRooms, setAvailRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
@@ -188,22 +197,22 @@ export default function BookingsClient() {
   const guestDisplayName = (g: Guest | null | undefined) => g?.name || g?.full_name || "Unknown"
 
   if (loading) return (
-    <div style={{ padding: "28px" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px" }}>
       <div className="skeleton" style={{ height: "48px", borderRadius: "12px", marginBottom: "16px" }} />
       <div className="skeleton" style={{ height: "400px", borderRadius: "16px" }} />
     </div>
   )
 
   return (
-    <div style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto", overflowX: "hidden", boxSizing: "border-box" as const, width: "100%" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h1 className="page-title">Bookings</h1>
+          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Bookings</h1>
           <p className="page-sub">{bookings.length} total &middot; {counts.checked_in || 0} active</p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button className="btn btn-secondary btn-sm" onClick={fetchAll}><RefreshCw size={13} /> Refresh</button>
           <button className="btn btn-primary btn-sm" onClick={() => { fetchFormData(); setShowNew(true) }}>
             <Plus size={13} /> New Booking
@@ -213,7 +222,7 @@ export default function BookingsClient() {
 
       {/* Filter Tabs */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <div className="filter-tabs" style={{ flex: 1, minWidth: 0 }}>
+        <div className="filter-tabs" style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
           {STATUSES.map((s) => (
             <button key={s} className={"filter-tab" + (filter === s ? " active" : "")} onClick={() => setFilter(s)}>
               {s === "all" ? "All" : STATUS_META[s]?.label || s}
@@ -224,7 +233,7 @@ export default function BookingsClient() {
       </div>
 
       {/* Search */}
-      <div className="search-wrap" style={{ marginBottom: "20px", maxWidth: "360px" }}>
+      <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
         <Search size={15} className="search-icon" />
         <input
           className="search-input"
@@ -470,7 +479,7 @@ export default function BookingsClient() {
                 ))}
               </select>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">Check In Date *</label>
                 <input className="form-input" type="date" value={form.check_in_date}
