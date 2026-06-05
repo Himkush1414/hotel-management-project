@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import { ClipboardList, RefreshCw, CheckCircle, XCircle, Clock, Calendar, Users, ChevronLeft, ChevronRight } from "lucide-react"
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
@@ -15,12 +14,12 @@ const toDateStr = (d: Date) => d.toISOString().split("T")[0]
 
 const STATUSES = ["present", "absent", "half_day", "late", "leave"]
 
-const STATUS_META: Record<string, { label: string; pill: string; color: string; bg: string; icon: any }> = {
-  present:  { label: "Present",  pill: "pill-green",  color: "var(--green)",  bg: "var(--green-bg)",  icon: CheckCircle },
-  absent:   { label: "Absent",   pill: "pill-red",    color: "var(--red)",    bg: "var(--red-bg)",    icon: XCircle     },
-  half_day: { label: "Half Day", pill: "pill-amber",  color: "var(--amber)",  bg: "var(--amber-bg)",  icon: Clock       },
-  late:     { label: "Late",     pill: "pill-amber",  color: "var(--amber)",  bg: "var(--amber-bg)",  icon: Clock       },
-  leave:    { label: "On Leave", pill: "pill-blue",   color: "var(--blue)",   bg: "var(--blue-bg)",   icon: Calendar    },
+const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  present:  { label: "Present",  color: "#00b894", bg: "rgba(0,184,148,0.12)",   border: "rgba(0,184,148,0.28)"   },
+  absent:   { label: "Absent",   color: "#e17055", bg: "rgba(225,112,85,0.12)",  border: "rgba(225,112,85,0.28)"  },
+  half_day: { label: "Half Day", color: "#fdcb6e", bg: "rgba(253,203,110,0.12)", border: "rgba(253,203,110,0.28)" },
+  late:     { label: "Late",     color: "#fdcb6e", bg: "rgba(253,203,110,0.12)", border: "rgba(253,203,110,0.28)" },
+  leave:    { label: "On Leave", color: "#74b9ff", bg: "rgba(116,185,255,0.12)", border: "rgba(116,185,255,0.28)" },
 }
 
 const avatarColors = [
@@ -45,6 +44,30 @@ function Avatar({ name, size = 38 }: { name: string; size?: number }) {
   )
 }
 
+// ── SVG Icons ──────────────────────────────────────────────────────────────────
+const IcoRefresh = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <path d="M11.5 2A6 6 0 106.5 1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+    <path d="M6.5 1L9 3.5M6.5 1L4 3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoCheck = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.6"/>
+    <path d="M3.5 6.5l2.5 2.5 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoRight = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
 interface Staff {
   id: string
   name?: string | null
@@ -64,21 +87,20 @@ interface AttendanceRecord {
 export default function AttendanceClient() {
   const db = createClient() as any
 
-  const [staff, setStaff] = useState<Staff[]>([])
+  const [staff, setStaff]               = useState<Staff[]>([])
+  const [isMobile, setIsMobile]         = useState(false)
+  const [attendance, setAttendance]     = useState<Record<string, AttendanceRecord>>({})
+  const [loading, setLoading]           = useState(true)
+  const [saving, setSaving]             = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string>(toDateStr(new Date()))
+  const [bulkMarking, setBulkMarking]   = useState(false)
 
-  const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
     window.addEventListener("resize", check)
     return () => window.removeEventListener("resize", check)
   }, [])
-
-  const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({})
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null)
-  const [selectedDate, setSelectedDate] = useState<string>(toDateStr(new Date()))
-  const [bulkMarking, setBulkMarking] = useState(false)
 
   useEffect(() => { fetchAll() }, [selectedDate])
 
@@ -114,7 +136,8 @@ export default function AttendanceClient() {
         ...prev,
         [staffId]: { ...prev[staffId], staff_id: staffId, date: selectedDate, status },
       }))
-      toast.success(staffName(staff.find((s) => s.id === staffId)) + " marked " + STATUS_META[status]?.label)
+      const sName = staffName(staff.find((s) => s.id === staffId))
+      toast.success(sName + " marked " + (STATUS_META[status]?.label || status))
     } catch { toast.error("Failed to mark attendance") }
     finally { setSaving(null) }
   }
@@ -127,11 +150,8 @@ export default function AttendanceClient() {
       const toUpdate: { id: string; status: string }[] = []
       for (const s of staff) {
         const existing = attendance[s.id]
-        if (existing?.id) {
-          toUpdate.push({ id: existing.id, status: "present" })
-        } else {
-          toInsert.push({ staff_id: s.id, date: selectedDate, status: "present" })
-        }
+        if (existing?.id) { toUpdate.push({ id: existing.id, status: "present" }) }
+        else { toInsert.push({ staff_id: s.id, date: selectedDate, status: "present" }) }
       }
       if (toInsert.length > 0) {
         const { error } = await db.from("attendance").insert(toInsert)
@@ -163,235 +183,242 @@ export default function AttendanceClient() {
     acc[s] = Object.values(attendance).filter((a) => a.status === s).length
     return acc
   }, {} as Record<string, number>)
-  const unmarked = staff.length - Object.keys(attendance).length
+  const unmarked = Math.max(0, staff.length - Object.keys(attendance).length)
+
+  const p   = isMobile ? "12px" : "28px"
+  const gap = isMobile ? "10px" : "14px"
 
   if (loading) return (
-    <div style={{ padding: isMobile ? "12px" : "28px", overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
-      <div className="skeleton" style={{ height: "72px", borderRadius: "16px", marginBottom: "16px" }} />
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
-        {[1,2,3,4,5,6].map((i) => (
-          <div key={i} className="skeleton" style={{ height: "120px", borderRadius: "16px" }} />
-        ))}
+    <div style={{ padding: p, overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
+      <div className="skeleton" style={{ height: "56px", borderRadius: "0", marginBottom: "16px" }} />
+      <div className="skeleton" style={{ height: "90px", borderRadius: "12px", marginBottom: "16px" }} />
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap }}>
+        {[1,2,3,4,5,6].map((i) => <div key={i} className="skeleton" style={{ height: "130px", borderRadius: "12px" }} />)}
       </div>
     </div>
   )
 
   return (
-    <div style={{
-      padding: isMobile ? "12px" : "28px",
-      maxWidth: "1400px",
-      margin: "0 auto",
-      overflowX: "hidden",
-      width: "100%",
-      boxSizing: "border-box",
-    }}>
+    <div style={{ overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
-        <div>
-          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Attendance</h1>
-          <p className="page-sub">{staff.length} active staff</p>
+      {/* ── Topbar ── */}
+      <div style={{
+        position: "sticky", top: 0, height: "56px",
+        background: "rgba(10,10,15,0.88)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(255,255,255,0.065)",
+        zIndex: 50, display: "flex", alignItems: "center",
+        padding: isMobile ? "0 14px" : "0 28px",
+        gap: "8px", flexShrink: 0,
+      }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: isMobile ? "15px" : "16px", fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>Attendance</div>
+          {!isMobile && <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>{staff.length} active staff</div>}
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <button className="btn btn-secondary btn-sm" onClick={fetchAll}><RefreshCw size={13} /> Refresh</button>
-          <button className="btn btn-primary btn-sm" onClick={markAllPresent} disabled={bulkMarking}>
-            <CheckCircle size={13} /> {bulkMarking ? "Marking..." : "All Present"}
-          </button>
-        </div>
+        <button onClick={fetchAll}
+          style={{ height: "32px", padding: "0 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "rgba(240,240,248,0.6)", fontSize: "12px", fontWeight: 500, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 150ms ease" }}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.09)";e.currentTarget.style.color="rgba(240,240,248,0.9)"}}
+          onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.05)";e.currentTarget.style.color="rgba(240,240,248,0.6)"}}
+        >
+          <IcoRefresh />{!isMobile && "Refresh"}
+        </button>
+        <button
+          onClick={markAllPresent} disabled={bulkMarking}
+          style={{ height: "32px", padding: "0 14px", background: "var(--accent)", border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: 600, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 0 18px rgba(108,92,231,0.3)", transition: "all 150ms ease", letterSpacing: "-0.1px", opacity: bulkMarking ? 0.7 : 1 }}
+          onMouseEnter={e=>{e.currentTarget.style.background="#7d6ff0"}}
+          onMouseLeave={e=>{e.currentTarget.style.background="var(--accent)"}}
+        >
+          <IcoCheck />{isMobile ? "" : bulkMarking ? "Marking..." : "All Present"}
+        </button>
       </div>
 
-      {/* Date Navigator — mobile-optimised */}
-      <div className="card-surface animate-fade-in" style={{ padding: isMobile ? "12px" : "16px 20px", marginBottom: "16px" }}>
-        {/* Row 1: prev/date/next */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between", marginBottom: isMobile ? "10px" : "0" }}>
-          <button className="btn btn-secondary btn-sm" style={{ width: "32px", height: "32px", padding: 0, flexShrink: 0 }} onClick={() => shiftDate(-1)}>
-            <ChevronLeft size={16} />
-          </button>
-          <div style={{ textAlign: "center", flex: 1 }}>
-            <div style={{ fontSize: isMobile ? "13px" : "15px", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>
-              {isMobile ? fmtDateShort(selectedDate) : fmtDate(selectedDate)}
+      <div style={{ padding: p, maxWidth: "1400px", margin: "0 auto" }}>
+
+        {/* ── Date Navigator ── */}
+        <div style={{
+          background: "var(--bg-surface)", border: "1px solid var(--border)",
+          borderRadius: "12px", padding: isMobile ? "12px" : "16px 20px",
+          marginBottom: gap,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: "space-between", marginBottom: isMobile ? "10px" : "0" }}>
+            <button
+              onClick={() => shiftDate(-1)}
+              style={{ width: "32px", height: "32px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "rgba(240,240,248,0.6)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 150ms ease" }}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.09)"}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.05)"}}
+            >
+              <IcoLeft />
+            </button>
+
+            <div style={{ textAlign: "center", flex: 1 }}>
+              <div style={{ fontSize: isMobile ? "13px" : "15px", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>
+                {isMobile ? fmtDateShort(selectedDate) : fmtDate(selectedDate)}
+              </div>
+              {isToday && (
+                <span style={{ display: "inline-block", marginTop: "4px", fontSize: "10px", fontWeight: 600, color: "#00b894", background: "rgba(0,184,148,0.1)", border: "1px solid rgba(0,184,148,0.25)", borderRadius: "99px", padding: "1px 8px" }}>
+                  Today
+                </span>
+              )}
             </div>
-            {isToday && (
-              <span className="pill pill-green" style={{ fontSize: "10px", padding: "1px 8px", marginTop: "4px", display: "inline-block" }}>Today</span>
+
+            <button
+              onClick={() => shiftDate(1)} disabled={isToday}
+              style={{ width: "32px", height: "32px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: isToday ? "rgba(240,240,248,0.2)" : "rgba(240,240,248,0.6)", cursor: isToday ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 150ms ease" }}
+              onMouseEnter={e=>{if(!isToday)e.currentTarget.style.background="rgba(255,255,255,0.09)"}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.05)"}}
+            >
+              <IcoRight />
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", justifyContent: "center", marginTop: isMobile ? "0" : "10px" }}>
+            <input
+              type="date" value={selectedDate} max={toDateStr(new Date())}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", fontFamily: '"DM Mono",monospace', color: "var(--text-primary)", outline: "none", cursor: "pointer", flex: isMobile ? 1 : "none" }}
+            />
+            {!isToday && (
+              <button
+                onClick={() => setSelectedDate(toDateStr(new Date()))}
+                style={{ height: "32px", padding: "0 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "rgba(240,240,248,0.6)", fontSize: "12px", fontWeight: 500, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", transition: "all 150ms ease", whiteSpace: "nowrap" }}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.09)"}}
+                onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.05)"}}
+              >
+                Today
+              </button>
             )}
           </div>
-          <button className="btn btn-secondary btn-sm" style={{ width: "32px", height: "32px", padding: 0, flexShrink: 0 }} onClick={() => shiftDate(1)} disabled={isToday}>
-            <ChevronRight size={16} />
-          </button>
         </div>
-        {/* Row 2: date input + today button */}
-        <div style={{ display: "flex", gap: "6px", alignItems: "center", justifyContent: "center" }}>
-          <input
-            type="date"
-            value={selectedDate}
-            max={toDateStr(new Date())}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "10px", padding: "7px 12px", fontSize: "13px",
-              fontFamily: '"DM Mono", monospace', color: "var(--text-primary)",
-              outline: "none", cursor: "pointer", flex: isMobile ? 1 : "none",
-            }}
-          />
-          {!isToday && (
-            <button className="btn btn-secondary btn-sm" onClick={() => setSelectedDate(toDateStr(new Date()))}>
-              Today
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Summary Strip */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch", paddingBottom: "4px" }}>
-        {[
-          { key: "present",  label: "Present",  val: counts.present  || 0 },
-          { key: "absent",   label: "Absent",   val: counts.absent   || 0 },
-          { key: "half_day", label: "Half Day", val: counts.half_day || 0 },
-          { key: "late",     label: "Late",     val: counts.late     || 0 },
-          { key: "leave",    label: "Leave",    val: counts.leave    || 0 },
-          { key: "unmarked", label: "Unmarked", val: unmarked >= 0 ? unmarked : 0 },
-        ].map((item) => {
-          const meta = STATUS_META[item.key]
-          return (
+        {/* ── Summary Strip ── */}
+        <div style={{ display: "flex", gap: "8px", marginBottom: gap, overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch", paddingBottom: "4px" }}>
+          {[
+            { key: "present",  label: "Present",  val: counts.present  || 0, color: "#00b894" },
+            { key: "absent",   label: "Absent",   val: counts.absent   || 0, color: "#e17055" },
+            { key: "half_day", label: "Half Day", val: counts.half_day || 0, color: "#fdcb6e" },
+            { key: "late",     label: "Late",     val: counts.late     || 0, color: "#fdcb6e" },
+            { key: "leave",    label: "Leave",    val: counts.leave    || 0, color: "#74b9ff" },
+            { key: "unmarked", label: "Unmarked", val: unmarked,             color: "rgba(240,240,248,0.3)" },
+            { key: "total",    label: "Total",    val: staff.length,         color: "var(--text-primary)" },
+          ].map((item) => (
             <div key={item.key} style={{
               flexShrink: 0,
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "12px",
-              padding: isMobile ? "10px 14px" : "12px 20px",
+              background: "var(--bg-surface)", border: "1px solid var(--border)",
+              borderRadius: "12px", padding: isMobile ? "10px 12px" : "12px 18px",
               display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-              minWidth: isMobile ? "70px" : "90px",
+              minWidth: isMobile ? "66px" : "82px",
             }}>
-              <div style={{
-                fontFamily: '"DM Mono", monospace',
-                fontSize: isMobile ? "18px" : "22px",
-                fontWeight: 700,
-                color: meta?.color || "var(--text-muted)",
-                lineHeight: 1,
-              }}>{item.val}</div>
-              <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>
+              <div style={{ fontFamily: '"DM Mono",monospace', fontSize: isMobile ? "18px" : "22px", fontWeight: 700, color: item.color, lineHeight: 1 }}>
+                {item.val}
+              </div>
+              <div style={{ fontSize: "9.5px", fontWeight: 600, color: "rgba(240,240,248,0.35)", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>
                 {item.label}
               </div>
             </div>
-          )
-        })}
-        <div style={{
-          flexShrink: 0,
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border)",
-          borderRadius: "12px",
-          padding: isMobile ? "10px 14px" : "12px 20px",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-          minWidth: isMobile ? "70px" : "90px",
-        }}>
-          <div style={{ fontFamily: '"DM Mono", monospace', fontSize: isMobile ? "18px" : "22px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>
-            {staff.length}
-          </div>
-          <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</div>
+          ))}
         </div>
-      </div>
 
-      {/* Staff Grid */}
-      {staff.length === 0 ? (
-        <div className="card-surface">
-          <div className="empty-state">
-            <Users size={40} style={{ color: "var(--text-muted)", marginBottom: "16px" }} />
-            <div className="empty-state-title">No active staff</div>
-            <div className="empty-state-sub">Add staff members to track attendance</div>
+        {/* ── Staff Grid ── */}
+        {staff.length === 0 ? (
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "60px 24px", textAlign: "center" }}>
+            <div style={{ fontSize: "13px", color: "rgba(240,240,248,0.35)" }}>No active staff — add staff members to track attendance</div>
           </div>
-        </div>
-      ) : (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: isMobile ? "10px" : "14px",
-        }}>
-          {staff.map((s) => {
-            const rec = attendance[s.id]
-            const currentStatus = rec?.status || null
-            const isSaving = saving === s.id
-            const name = staffName(s)
-            const roleLower = (s.role || "other").toLowerCase()
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap }}>
+            {staff.map((s) => {
+              const rec           = attendance[s.id]
+              const currentStatus = rec?.status || null
+              const isSaving      = saving === s.id
+              const name          = staffName(s)
+              const meta          = currentStatus ? STATUS_META[currentStatus] : null
 
-            return (
-              <div key={s.id} className="card-surface animate-fade-in" style={{ padding: isMobile ? "14px" : "18px", position: "relative", overflow: "hidden" }}>
-                {currentStatus && (
+              return (
+                <div key={s.id} style={{
+                  background: "var(--bg-surface)", border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: "12px", padding: isMobile ? "13px 14px" : "16px 18px",
+                  position: "relative", overflow: "hidden",
+                  transition: "border-color 150ms ease",
+                }}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.13)"}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.07)"}}
+                >
+                  {/* Top accent bar based on status */}
                   <div style={{
-                    position: "absolute", top: 0, left: 0, right: 0, height: "3px",
-                    background: STATUS_META[currentStatus]?.color || "transparent",
-                    borderRadius: "16px 16px 0 0",
+                    position: "absolute", top: 0, left: 0, right: 0, height: "2.5px",
+                    background: meta ? meta.color : "rgba(255,255,255,0.06)",
+                    borderRadius: "12px 12px 0 0",
                   }} />
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                  <Avatar name={name} size={isMobile ? 34 : 40} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: isMobile ? "13px" : "14px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {name}
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                    <Avatar name={name} size={isMobile ? 34 : 38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: isMobile ? "13px" : "14px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {name}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "rgba(240,240,248,0.4)", textTransform: "capitalize", marginTop: "1px" }}>
+                        {(s.role || "other").replace("_", " ")}
+                      </div>
                     </div>
-                    <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "capitalize", marginTop: "1px" }}>
-                      {roleLower.replace("_", " ")}
-                    </div>
+                    <span style={{
+                      flexShrink: 0,
+                      fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "99px",
+                      color: meta ? meta.color : "rgba(240,240,248,0.3)",
+                      background: meta ? meta.bg : "rgba(255,255,255,0.05)",
+                      border: "1px solid " + (meta ? meta.border : "rgba(255,255,255,0.08)"),
+                      whiteSpace: "nowrap",
+                    }}>
+                      {meta ? meta.label : "Unmarked"}
+                    </span>
                   </div>
-                  {currentStatus ? (
-                    <span className={"pill " + (STATUS_META[currentStatus]?.pill || "pill-gray")} style={{ fontSize: "10px", padding: "2px 7px", flexShrink: 0 }}>
-                      {STATUS_META[currentStatus]?.label}
-                    </span>
-                  ) : (
-                    <span className="pill pill-gray" style={{ fontSize: "10px", padding: "2px 7px", flexShrink: 0 }}>
-                      Unmarked
-                    </span>
-                  )}
-                </div>
 
-                {/* Status Buttons — 3+2 layout on mobile */}
-                <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
-                  {STATUSES.map((status) => {
-                    const meta = STATUS_META[status]
-                    const isActive = currentStatus === status
-                    return (
-                      <button
-                        key={status}
-                        disabled={isSaving}
-                        onClick={() => markStatus(s.id, status)}
-                        style={{
-                          padding: isMobile ? "4px 8px" : "5px 10px",
-                          borderRadius: "8px",
-                          fontSize: isMobile ? "10px" : "11px",
-                          fontWeight: 600,
-                          cursor: isSaving ? "not-allowed" : "pointer",
-                          border: "1px solid " + (isActive ? meta.color : "rgba(255,255,255,0.08)"),
-                          background: isActive ? meta.bg : "transparent",
-                          color: isActive ? meta.color : "var(--text-muted)",
-                          transition: "all 150ms ease",
-                          opacity: isSaving ? 0.5 : 1,
-                          fontFamily: '"DM Sans", sans-serif',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isActive && !isSaving) {
-                            e.currentTarget.style.background = meta.bg
-                            e.currentTarget.style.color = meta.color
-                            e.currentTarget.style.borderColor = meta.color
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive && !isSaving) {
-                            e.currentTarget.style.background = "transparent"
-                            e.currentTarget.style.color = "var(--text-muted)"
-                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
-                          }
-                        }}
-                      >
-                        {meta.label}
-                      </button>
-                    )
-                  })}
+                  <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
+                    {STATUSES.map((status) => {
+                      const sm = STATUS_META[status]
+                      const isActive = currentStatus === status
+                      return (
+                        <button
+                          key={status}
+                          disabled={isSaving}
+                          onClick={() => markStatus(s.id, status)}
+                          style={{
+                            padding: isMobile ? "4px 8px" : "5px 10px",
+                            borderRadius: "7px",
+                            fontSize: isMobile ? "10px" : "11px",
+                            fontWeight: 600,
+                            cursor: isSaving ? "not-allowed" : "pointer",
+                            border: "1px solid " + (isActive ? sm.color : "rgba(255,255,255,0.08)"),
+                            background: isActive ? sm.bg : "transparent",
+                            color: isActive ? sm.color : "rgba(240,240,248,0.4)",
+                            transition: "all 150ms ease",
+                            opacity: isSaving ? 0.5 : 1,
+                            fontFamily: '"DM Sans",sans-serif',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isActive && !isSaving) {
+                              e.currentTarget.style.background = sm.bg
+                              e.currentTarget.style.color = sm.color
+                              e.currentTarget.style.borderColor = sm.color
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isActive && !isSaving) {
+                              e.currentTarget.style.background = "transparent"
+                              e.currentTarget.style.color = "rgba(240,240,248,0.4)"
+                              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                            }
+                          }}
+                        >
+                          {sm.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

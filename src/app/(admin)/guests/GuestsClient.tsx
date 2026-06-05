@@ -3,10 +3,6 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import {
-  Users, Plus, RefreshCw, Search, X,
-  Phone, Mail, MapPin, CreditCard, Calendar
-} from "lucide-react"
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
@@ -37,6 +33,66 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   )
 }
 
+// ── SVG Icons ──────────────────────────────────────────────────────────────────
+const IcoPlus = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+)
+const IcoRefresh = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <path d="M11.5 2A6 6 0 106.5 1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+    <path d="M6.5 1L9 3.5M6.5 1L4 3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoSearch = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.6"/>
+    <path d="M9.5 9.5l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+  </svg>
+)
+const IcoX = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+  </svg>
+)
+const IcoPhone = () => (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <path d="M2 1h2.5l1 2.5-1.5 1a7 7 0 003.5 3.5l1-1.5L11 7.5V10a1 1 0 01-1 1A9 9 0 011 2a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoMail = () => (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <rect x="1" y="2.5" width="9" height="6.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M1 3.5l4.5 3 4.5-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoCard = () => (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <rect x="1" y="2.5" width="9" height="6.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M1 5h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <path d="M3 7.5h2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+)
+const IcoPin = () => (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <circle cx="5.5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M5.5 10C5.5 10 1.5 6.8 1.5 4.5a4 4 0 018 0C9.5 6.8 5.5 10 5.5 10z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IcoCal = () => (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <rect x="1" y="2" width="9" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M3.5 1v2M7.5 1v2M1 5h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+)
+const IcoChevron = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M4 3l4 3-4 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface Booking {
   id: string
   booking_number?: string | null
@@ -46,7 +102,6 @@ interface Booking {
   total_amount?: number | null
   room?: { room_number: string } | null
 }
-
 interface Guest {
   id: string
   name?: string | null
@@ -61,13 +116,28 @@ interface Guest {
   bookings?: Booking[]
 }
 
-const STATUS_META: Record<string, { label: string; pill: string }> = {
-  pending:     { label: "Pending",     pill: "pill-amber" },
-  confirmed:   { label: "Confirmed",   pill: "pill-blue"  },
-  checked_in:  { label: "Checked In",  pill: "pill-green" },
-  checked_out: { label: "Checked Out", pill: "pill-gray"  },
-  cancelled:   { label: "Cancelled",   pill: "pill-red"   },
-  no_show:     { label: "No Show",     pill: "pill-red"   },
+const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  pending:     { label: "Pending",     color: "#fdcb6e", bg: "rgba(253,203,110,0.1)", border: "rgba(253,203,110,0.25)" },
+  confirmed:   { label: "Confirmed",   color: "#74b9ff", bg: "rgba(116,185,255,0.1)", border: "rgba(116,185,255,0.25)" },
+  checked_in:  { label: "Checked In",  color: "#00b894", bg: "rgba(0,184,148,0.1)",   border: "rgba(0,184,148,0.25)"   },
+  checked_out: { label: "Checked Out", color: "rgba(240,240,248,0.4)", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.1)" },
+  cancelled:   { label: "Cancelled",   color: "#e17055", bg: "rgba(225,112,85,0.1)",  border: "rgba(225,112,85,0.25)"  },
+  no_show:     { label: "No Show",     color: "#e17055", bg: "rgba(225,112,85,0.1)",  border: "rgba(225,112,85,0.25)"  },
+}
+
+function StatusPill({ status }: { status: string }) {
+  const m = STATUS_META[status] || STATUS_META.pending
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center",
+      fontSize: "10px", fontWeight: 600, letterSpacing: "0.02em",
+      padding: "3px 8px", borderRadius: "99px",
+      color: m.color, background: m.bg, border: "1px solid " + m.border,
+      whiteSpace: "nowrap",
+    }}>
+      {m.label}
+    </span>
+  )
 }
 
 function Modal({ title, onClose, wide, children }: {
@@ -89,27 +159,27 @@ const BLANK_FORM = {
   id_number: "", nationality: "Indian", address: "",
 }
 
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function GuestsClient() {
   const db = createClient() as any
 
-  const [guests, setGuests] = useState<Guest[]>([])
+  const [guests, setGuests]             = useState<Guest[]>([])
+  const [isMobile, setIsMobile]         = useState(false)
+  const [loading, setLoading]           = useState(true)
+  const [search, setSearch]             = useState("")
+  const [showAdd, setShowAdd]           = useState(false)
+  const [viewGuest, setViewGuest]       = useState<Guest | null>(null)
+  const [guestBookings, setGuestBookings] = useState<Booking[]>([])
+  const [loadingBookings, setLoadingBookings] = useState(false)
+  const [saving, setSaving]             = useState(false)
+  const [form, setForm]                 = useState(BLANK_FORM)
 
-  const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
     window.addEventListener("resize", check)
     return () => window.removeEventListener("resize", check)
   }, [])
-
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [showAdd, setShowAdd] = useState(false)
-  const [viewGuest, setViewGuest] = useState<Guest | null>(null)
-  const [guestBookings, setGuestBookings] = useState<Booking[]>([])
-  const [loadingBookings, setLoadingBookings] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState(BLANK_FORM)
 
   useEffect(() => { fetchGuests() }, [])
 
@@ -146,20 +216,14 @@ export default function GuestsClient() {
     setSaving(true)
     try {
       const { error } = await db.from("guests").insert({
-        name: displayName,
-        full_name: displayName,
-        email: form.email || null,
-        phone: form.phone.trim(),
-        id_type: form.id_type || null,
-        id_number: form.id_number || null,
-        nationality: form.nationality || null,
-        address: form.address || null,
+        name: displayName, full_name: displayName,
+        email: form.email || null, phone: form.phone.trim(),
+        id_type: form.id_type || null, id_number: form.id_number || null,
+        nationality: form.nationality || null, address: form.address || null,
       })
       if (error) throw error
       toast.success("Guest added successfully")
-      setShowAdd(false)
-      setForm(BLANK_FORM)
-      fetchGuests()
+      setShowAdd(false); setForm(BLANK_FORM); fetchGuests()
     } catch { toast.error("Failed to add guest") }
     finally { setSaving(false) }
   }
@@ -177,173 +241,246 @@ export default function GuestsClient() {
     )
   })
 
+  const p = isMobile ? "12px" : "28px"
+
   if (loading) return (
-    <div style={{ padding: isMobile ? "12px" : "28px" }}>
-      <div className="skeleton" style={{ height: "48px", borderRadius: "12px", marginBottom: "16px" }} />
-      <div className="skeleton" style={{ height: "500px", borderRadius: "16px" }} />
+    <div style={{ padding: p, overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
+      <div className="skeleton" style={{ height: "56px", borderRadius: "0", marginBottom: "16px" }} />
+      <div className="skeleton" style={{ height: "500px", borderRadius: "12px" }} />
     </div>
   )
 
   return (
-    <div style={{ padding: isMobile ? "12px" : "28px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "16px" : "24px", flexWrap: "wrap", gap: "10px" }}>
-        <div>
-          <h1 className="page-title" style={{ fontSize: isMobile ? "18px" : undefined }}>Guests</h1>
-          <p className="page-sub">{guests.length} registered guests</p>
+      {/* ── Topbar ── */}
+      <div style={{
+        position: "sticky", top: 0, height: "56px",
+        background: "rgba(10,10,15,0.88)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(255,255,255,0.065)",
+        zIndex: 50, display: "flex", alignItems: "center",
+        padding: isMobile ? "0 14px" : "0 28px",
+        gap: "8px", flexShrink: 0,
+      }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: isMobile ? "15px" : "16px", fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
+            Guests
+          </div>
+          {!isMobile && (
+            <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
+              {guests.length} registered guests
+            </div>
+          )}
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="btn btn-secondary btn-sm" onClick={fetchGuests}><RefreshCw size={13} /> Refresh</button>
-          <button className="btn btn-primary btn-sm" onClick={() => { setForm(BLANK_FORM); setShowAdd(true) }}>
-            <Plus size={13} /> Add Guest
-          </button>
-        </div>
+        <button
+          onClick={fetchGuests}
+          style={{ height: "32px", padding: "0 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "rgba(240,240,248,0.6)", fontSize: "12px", fontWeight: 500, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 150ms ease" }}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.09)";e.currentTarget.style.color="rgba(240,240,248,0.9)"}}
+          onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.05)";e.currentTarget.style.color="rgba(240,240,248,0.6)"}}
+        >
+          <IcoRefresh />{!isMobile && "Refresh"}
+        </button>
+        <button
+          onClick={() => { setForm(BLANK_FORM); setShowAdd(true) }}
+          style={{ height: "32px", padding: "0 14px", background: "var(--accent)", border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: 600, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 0 18px rgba(108,92,231,0.3)", transition: "all 150ms ease", letterSpacing: "-0.1px" }}
+          onMouseEnter={e=>{e.currentTarget.style.background="#7d6ff0";e.currentTarget.style.boxShadow="0 0 24px rgba(108,92,231,0.45)"}}
+          onMouseLeave={e=>{e.currentTarget.style.background="var(--accent)";e.currentTarget.style.boxShadow="0 0 18px rgba(108,92,231,0.3)"}}
+        >
+          <IcoPlus />{!isMobile && "Add Guest"}
+        </button>
       </div>
 
-      {/* Search */}
-      <div className="search-wrap" style={{ marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
-        <Search size={15} className="search-icon" />
-        <input className="search-input" placeholder="Search by name, phone or ID..."
-          value={search} onChange={(e) => setSearch(e.target.value)} />
-        {search && (
-          <button onClick={() => setSearch("")} style={{
-            position: "absolute", right: "10px", background: "none", border: "none",
-            color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center",
-          }}><X size={13} /></button>
-        )}
-      </div>
+      {/* ── Page content ── */}
+      <div style={{ padding: p, maxWidth: "1400px", margin: "0 auto" }}>
 
-      {/* Empty */}
-      {filtered.length === 0 && (
-        <div className="card-surface">
-          <div className="empty-state">
-            <Users size={40} style={{ color: "var(--text-muted)", marginBottom: "16px" }} />
-            <div className="empty-state-title">No guests found</div>
-            <div className="empty-state-sub">
-              {search ? "No guests match your search" : "Add your first guest to get started"}
+        {/* Search */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center", marginBottom: "16px", maxWidth: isMobile ? "100%" : "360px" }}>
+          <span style={{ position: "absolute", left: "11px", color: "rgba(240,240,248,0.3)", display: "flex" }}>
+            <IcoSearch />
+          </span>
+          <input
+            style={{ width: "100%", height: "36px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "9px", padding: "0 36px 0 34px", fontSize: "13px", fontFamily: '"DM Sans",sans-serif', color: "var(--text-primary)", outline: "none", transition: "border-color 150ms ease" }}
+            placeholder="Search by name, phone or ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={e=>{e.currentTarget.style.borderColor="rgba(108,92,231,0.5)"}}
+            onBlur={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.08)"}}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ position: "absolute", right: "10px", background: "none", border: "none", color: "rgba(240,240,248,0.35)", cursor: "pointer", display: "flex", alignItems: "center", padding: "2px" }}>
+              <IcoX />
+            </button>
+          )}
+        </div>
+
+        {/* Empty */}
+        {filtered.length === 0 && (
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "60px 24px", textAlign: "center" }}>
+            <div style={{ fontSize: "13px", color: "rgba(240,240,248,0.35)", marginBottom: "8px" }}>
+              {search ? "No guests match your search" : "No guests added yet"}
             </div>
             {!search && (
-              <button className="btn btn-primary btn-sm" style={{ marginTop: "20px" }} onClick={() => setShowAdd(true)}>
-                <Plus size={13} /> Add Guest
+              <button onClick={() => setShowAdd(true)} style={{ marginTop: "12px", height: "32px", padding: "0 14px", background: "var(--accent)", border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: 600, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <IcoPlus /> Add Guest
               </button>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Table */}
-      {filtered.length > 0 && (
-        <div className="card-surface" style={{ overflow: "hidden" }}>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Guest</th>
-                  <th>Phone</th>
-                  <th>ID</th>
-                  <th>Nationality</th>
-                  <th>Registered</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((g) => (
-                  <tr key={g.id} style={{ cursor: "pointer" }} onClick={() => openGuest(g)}>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <Avatar name={guestName(g)} size={32} />
-                        <div>
-                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                            {guestName(g)}
-                          </div>
-                          {g.email && (
-                            <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{g.email}</div>
-                          )}
-                        </div>
+        {/* ── Mobile card list ── */}
+        {filtered.length > 0 && isMobile && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {filtered.map((g) => {
+              const name = guestName(g)
+              return (
+                <div
+                  key={g.id}
+                  onClick={() => openGuest(g)}
+                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "13px 14px", cursor: "pointer", transition: "border-color 150ms ease" }}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.13)"}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)"}}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Avatar name={name} size={36} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {name}
                       </div>
-                    </td>
-                    <td>
-                      <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-secondary)" }}>
-                        {g.phone || "—"}
-                      </span>
-                    </td>
-                    <td>
-                      {g.id_type && g.id_number ? (
-                        <div>
-                          <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                            {g.id_type}
-                          </div>
-                          <div style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-secondary)" }}>
-                            {g.id_number}
-                          </div>
+                      {g.email && (
+                        <div style={{ fontSize: "11px", color: "rgba(240,240,248,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {g.email}
                         </div>
-                      ) : (
-                        <span style={{ color: "var(--text-muted)" }}>—</span>
                       )}
-                    </td>
-                    <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-                      {g.nationality || "—"}
-                    </td>
-                    <td>
-                      <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-muted)" }}>
-                        {g.created_at ? fmtDate(g.created_at) : "—"}
-                      </span>
-                    </td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <button className="btn btn-secondary btn-sm" style={{ fontSize: "11px" }}
-                        onClick={() => openGuest(g)}>
-                        View Profile
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    <span style={{ color: "rgba(240,240,248,0.3)", flexShrink: 0 }}><IcoChevron /></span>
+                  </div>
+                  {g.phone && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                      <span style={{ color: "rgba(240,240,248,0.3)" }}><IcoPhone /></span>
+                      <span style={{ fontFamily: '"DM Mono",monospace', fontSize: "12px", color: "rgba(240,240,248,0.5)" }}>{g.phone}</span>
+                      {g.nationality && (
+                        <span style={{ marginLeft: "auto", fontSize: "11px", color: "rgba(240,240,248,0.35)" }}>{g.nationality}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Guest Profile Modal */}
+        {/* ── Desktop table ── */}
+        {filtered.length > 0 && !isMobile && (
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: "rgba(255,255,255,0.025)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                    {["Guest","Phone","ID","Nationality","Registered",""].map((h) => (
+                      <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "rgba(240,240,248,0.35)", textTransform: "uppercase", letterSpacing: "0.55px", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((g) => {
+                    const name = guestName(g)
+                    return (
+                      <tr
+                        key={g.id}
+                        onClick={() => openGuest(g)}
+                        style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", cursor: "pointer", transition: "background 120ms ease" }}
+                        onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.025)"}}
+                        onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}
+                      >
+                        <td style={{ padding: "12px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <Avatar name={name} size={30} />
+                            <div>
+                              <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>{name}</div>
+                              {g.email && <div style={{ fontSize: "11px", color: "rgba(240,240,248,0.4)", marginTop: "1px" }}>{g.email}</div>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <span style={{ fontFamily: '"DM Mono",monospace', fontSize: "12px", color: "rgba(240,240,248,0.55)" }}>
+                            {g.phone || "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          {g.id_type && g.id_number ? (
+                            <div>
+                              <div style={{ fontSize: "10px", color: "rgba(240,240,248,0.35)", textTransform: "uppercase", letterSpacing: "0.4px", fontWeight: 600 }}>{g.id_type}</div>
+                              <div style={{ fontFamily: '"DM Mono",monospace', fontSize: "12px", color: "rgba(240,240,248,0.55)", marginTop: "1px" }}>{g.id_number}</div>
+                            </div>
+                          ) : <span style={{ color: "rgba(240,240,248,0.25)" }}>—</span>}
+                        </td>
+                        <td style={{ padding: "12px 16px", fontSize: "12px", color: "rgba(240,240,248,0.55)" }}>
+                          {g.nationality || "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <span style={{ fontFamily: '"DM Mono",monospace', fontSize: "12px", color: "rgba(240,240,248,0.4)" }}>
+                            {g.created_at ? fmtDate(g.created_at) : "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 10px" }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => openGuest(g)}
+                            style={{ height: "26px", padding: "0 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", color: "rgba(240,240,248,0.5)", fontSize: "11px", fontWeight: 600, fontFamily: '"DM Sans",sans-serif', cursor: "pointer", display: "flex", alignItems: "center", gap: "5px", transition: "all 130ms ease", whiteSpace: "nowrap" }}
+                            onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.09)";e.currentTarget.style.color="rgba(240,240,248,0.85)"}}
+                            onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.04)";e.currentTarget.style.color="rgba(240,240,248,0.5)"}}
+                          >
+                            View Profile <IcoChevron />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Guest Profile Modal ── */}
       {viewGuest && (
         <Modal title="Guest Profile" wide onClose={() => { setViewGuest(null); setGuestBookings([]) }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-            {/* Profile Header */}
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <Avatar name={guestName(viewGuest)} size={56} />
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <Avatar name={guestName(viewGuest)} size={52} />
               <div>
-                <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
+                <div style={{ fontSize: "17px", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
                   {guestName(viewGuest)}
                 </div>
                 {viewGuest.email && (
-                  <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>{viewGuest.email}</div>
+                  <div style={{ fontSize: "12px", color: "rgba(240,240,248,0.4)", marginTop: "3px" }}>{viewGuest.email}</div>
                 )}
               </div>
             </div>
 
-            <div style={{ height: "1px", background: "var(--border)" }} />
+            <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
 
-            {/* Info Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               {[
-                { icon: Phone,      label: "Phone",       value: viewGuest.phone },
-                { icon: Mail,       label: "Email",       value: viewGuest.email },
-                { icon: CreditCard, label: "ID",          value: viewGuest.id_type && viewGuest.id_number ? viewGuest.id_type.toUpperCase() + ": " + viewGuest.id_number : null },
-                { icon: MapPin,     label: "Nationality", value: viewGuest.nationality },
-                { icon: MapPin,     label: "Address",     value: viewGuest.address },
-                { icon: Calendar,   label: "Registered",  value: viewGuest.created_at ? fmtDate(viewGuest.created_at) : null },
+                { Ico: IcoPhone, label: "Phone",       value: viewGuest.phone,       mono: true  },
+                { Ico: IcoMail,  label: "Email",        value: viewGuest.email,       mono: false },
+                { Ico: IcoCard,  label: "ID",           value: viewGuest.id_type && viewGuest.id_number ? viewGuest.id_type.toUpperCase() + ": " + viewGuest.id_number : null, mono: true },
+                { Ico: IcoPin,   label: "Nationality",  value: viewGuest.nationality, mono: false },
+                { Ico: IcoPin,   label: "Address",      value: viewGuest.address,     mono: false },
+                { Ico: IcoCal,   label: "Registered",   value: viewGuest.created_at ? fmtDate(viewGuest.created_at) : null, mono: true },
               ].filter((item) => item.value).map((item) => {
-                const Icon = item.icon
+                const { Ico } = item
                 return (
-                  <div key={item.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "12px 14px", border: "1px solid var(--border)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                      <Icon size={12} style={{ color: "var(--text-muted)" }} />
-                      <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <div key={item.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "12px 14px", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "5px" }}>
+                      <span style={{ color: "rgba(240,240,248,0.35)" }}><Ico /></span>
+                      <span style={{ fontSize: "9.5px", fontWeight: 600, color: "rgba(240,240,248,0.35)", textTransform: "uppercase", letterSpacing: "0.55px" }}>
                         {item.label}
                       </span>
                     </div>
-                    <div style={{ fontFamily: item.label === "Phone" || item.label === "ID" ? '"DM Mono", monospace' : "inherit", fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>
+                    <div style={{ fontFamily: item.mono ? '"DM Mono",monospace' : "inherit", fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>
                       {item.value}
                     </div>
                   </div>
@@ -351,47 +488,41 @@ export default function GuestsClient() {
               })}
             </div>
 
-            {/* Booking History */}
             <div>
-              <div className="section-label" style={{ marginBottom: "12px" }}>Booking History</div>
+              <div style={{ fontSize: "10px", fontWeight: 600, color: "rgba(240,240,248,0.35)", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: "12px" }}>
+                Booking History
+              </div>
               {loadingBookings ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: "52px", borderRadius: "10px" }} />)}
                 </div>
               ) : guestBookings.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "13px" }}>
+                <div style={{ textAlign: "center", padding: "24px", color: "rgba(240,240,248,0.3)", fontSize: "13px" }}>
                   No bookings yet
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {guestBookings.map((b) => {
-                    const meta = STATUS_META[b.status] || STATUS_META.pending
-                    return (
-                      <div key={b.id} style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "12px 14px", borderRadius: "10px",
-                        background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)",
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                          <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "11px", fontWeight: 600, color: "var(--accent-light)" }}>
-                            {b.booking_number || b.id.slice(0, 8).toUpperCase()}
-                          </span>
-                          <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "12px", color: "var(--text-muted)" }}>
-                            Room {b.room?.room_number || "—"}
-                          </span>
-                          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                            {fmtDate(b.check_in_date)} → {fmtDate(b.check_out_date)}
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>
-                            {fmt(b.total_amount || 0)}
-                          </span>
-                          <span className={"pill " + meta.pill}>{meta.label}</span>
-                        </div>
+                  {guestBookings.map((b) => (
+                    <div key={b.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px", borderRadius: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", gap: "8px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", flex: 1, minWidth: 0 }}>
+                        <span style={{ fontFamily: '"DM Mono",monospace', fontSize: "11px", fontWeight: 600, color: "var(--accent-light)", whiteSpace: "nowrap" }}>
+                          {b.booking_number || b.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <span style={{ fontFamily: '"DM Mono",monospace', fontSize: "11px", color: "rgba(240,240,248,0.4)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px", padding: "1px 6px", whiteSpace: "nowrap" }}>
+                          Room {b.room?.room_number || "—"}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "rgba(240,240,248,0.4)", whiteSpace: "nowrap" }}>
+                          {fmtDate(b.check_in_date)} → {fmtDate(b.check_out_date)}
+                        </span>
                       </div>
-                    )
-                  })}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                        <span style={{ fontFamily: '"DM Mono",monospace', fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                          {fmt(b.total_amount || 0)}
+                        </span>
+                        <StatusPill status={b.status} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -399,7 +530,7 @@ export default function GuestsClient() {
         </Modal>
       )}
 
-      {/* Add Guest Modal */}
+      {/* ── Add Guest Modal ── */}
       {showAdd && (
         <Modal title="Add New Guest" wide onClose={() => setShowAdd(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -411,8 +542,7 @@ export default function GuestsClient() {
               </div>
               <div className="form-group">
                 <label className="form-label">Phone *</label>
-                <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}
-                  placeholder="e.g. 9876543210" type="tel"
+                <input className="form-input" style={{ fontFamily: '"DM Mono",monospace' }} placeholder="e.g. 9876543210" type="tel"
                   value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
               </div>
             </div>
@@ -424,8 +554,7 @@ export default function GuestsClient() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label className="form-label">ID Type</label>
-                <select className="form-select" value={form.id_type}
-                  onChange={(e) => setForm((p) => ({ ...p, id_type: e.target.value }))}>
+                <select className="form-select" value={form.id_type} onChange={(e) => setForm((p) => ({ ...p, id_type: e.target.value }))}>
                   <option value="aadhaar">Aadhaar</option>
                   <option value="passport">Passport</option>
                   <option value="pan">PAN Card</option>
@@ -436,8 +565,7 @@ export default function GuestsClient() {
               </div>
               <div className="form-group">
                 <label className="form-label">ID Number</label>
-                <input className="form-input" style={{ fontFamily: '"DM Mono", monospace' }}
-                  placeholder="ID number"
+                <input className="form-input" style={{ fontFamily: '"DM Mono",monospace' }} placeholder="ID number"
                   value={form.id_number} onChange={(e) => setForm((p) => ({ ...p, id_number: e.target.value }))} />
               </div>
             </div>
